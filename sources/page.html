@@ -1,0 +1,274 @@
+<title>Base Scout</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/*STYLE*/</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brandrow"><h1>Base Scout</h1><select id="lang" aria-label="Language" title="Language"></select></div>
+      <p>Find the best spot for your base, or explore your seed's map.</p>
+    </div>
+  <nav class="tabbar" role="tablist" aria-label="Tools">
+      <button type="button" role="tab" id="tabFind" aria-selected="true" aria-controls="paneFind">Find a base</button>
+      <button type="button" role="tab" id="tabMap" aria-selected="false" aria-controls="paneMap">Seed map</button>
+      <button type="button" role="tab" id="tabLib" aria-selected="false" aria-controls="paneLib">Villager</button>
+    </nav>
+    <div class="seedbar">
+      <label class="fld" for="ver">Java version <select id="ver" title="The version the world was made in. Generation follows it."></select></label>
+      <label class="fld" for="seed">Java seed <input type="text" id="seed" value="" placeholder="type /seed in game" autocomplete="off" spellcheck="false"></label>
+      <div class="savewrap">
+        <button type="button" id="savedBtn" aria-expanded="false" aria-controls="savedPop">Saved seeds<span class="badge" id="savedN" hidden></span></button>
+        <div class="pop" id="savedPop" hidden>
+          <div class="filebar" id="fileBar" hidden></div>
+          <div class="pop-sec" style="display:grid;gap:6px">
+            <h3>Save this seed</h3>
+            <div class="saverow"><input type="text" id="saveName" placeholder="Name" maxlength="60" autocomplete="off"><button type="button" class="go" id="saveBtn" style="min-width:0;padding:8px 14px">Save</button></div>
+            <label class="check" for="saveRings" style="padding:0"><input type="checkbox" id="saveRings" checked> Keep my rings with it</label>
+          </div>
+          <div style="display:grid;gap:6px"><h3>Your seeds</h3><div class="savelist" id="savelist"></div></div>
+          <div class="popfoot" id="popFoot">
+            <button type="button" id="importBtn">Import seeds.txt</button>
+            <button type="button" id="copyList">Copy list</button>
+            <input type="file" id="importFile" accept=".txt,text/plain" hidden>
+          </div>
+          <p class="hint" style="margin:0" id="popHint">Import reads lines like <span style="font-family:var(--f-mono)">Name: seed</span>. Seeds are kept in this browser.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="pane" id="paneFind" role="tabpanel" aria-labelledby="tabFind">
+    <form class="controls" id="form">
+      <div class="fld fdim"><span>Look in</span>
+        <div class="dimseg" id="fmodeseg" role="group" aria-label="What to search">
+          <button type="button" data-fmode="seed" aria-pressed="true" title="Search your seed (top of the page) for the best spot">This seed</button><button type="button" data-fmode="seeds" aria-pressed="false" title="Try random seeds and keep those with everything in the rings around spawn, 0, 0 or your coordinates">Find seeds</button>
+        </div>
+      </div>
+      <div class="fld fdim"><span>Dimension</span>
+        <div class="dimseg" id="fdimseg" role="group" aria-label="Dimension to search">
+          <button type="button" data-fdim="0" aria-pressed="true">Overworld</button><button type="button" data-fdim="-1" aria-pressed="false">Nether</button>
+        </div>
+      </div>
+      <label class="fld coresfld" for="cores" title="How many processor cores Find seeds uses">Cores <select id="cores"></select></label>
+      <button class="go" id="go" type="submit">Search</button>
+    </form>
+  <div class="status" id="status"><span class="pulse" id="pulse"></span><span id="stext">Loading the world generator…</span></div>
+
+  <div class="main">
+    <aside class="panel">
+      <div class="sec seedsonly subtabs">
+        <div class="dimseg" id="ssubseg" role="group" aria-label="Kind of seed search">
+          <button type="button" data-ssub="fixed" aria-pressed="true" title="Structures at exact coordinates, or crack a world's seed">Fixed spots</button><button type="button" data-ssub="rings" aria-pressed="false" title="Structures and biomes in rings around spawn, 0, 0 or a point">Around a point</button>
+        </div>
+      </div>
+      <div class="sec ringonly">
+        <h2>Around your base <span>drag in · drag out to remove</span></h2>
+        <div class="startrow">
+      <label class="fld" for="start">Start from
+        <select id="start"><option value="origin">0, 0</option><option value="spawn">World spawn</option><option value="custom">Custom</option></select>
+      </label>
+      <label class="fld" for="cx" id="cxl" hidden>X <input type="number" id="cx"></label>
+      <label class="fld" for="cz" id="czl" hidden>Z <input type="number" id="cz"></label>
+      <label class="check" for="land" id="landL"><input type="checkbox" id="land" checked> Base on land</label>
+        </div>
+        <div class="target" id="target" aria-label="Zones around your base">
+          <div class="ring z3" data-zone="2"></div>
+          <div class="ring z2" data-zone="1"></div>
+          <div class="ring z1" data-zone="0"></div>
+          <div class="base"></div>
+        </div>
+        <div class="zone-sum" id="zsum"></div>
+        <div class="bsizes" id="bsizes" hidden>
+          <h3>Biome size <span>how big the patch has to be</span></h3>
+          <div id="bsrows"></div>
+        </div>
+      </div>
+      <div class="sec seedsonly fixonly" id="fixsec">
+        <h2>Fixed spots <span>drag a structure here · say where it is</span></h2>
+        <div class="fixbox" id="fixbox"></div>
+        <div class="crackrow"><button type="button" id="crack" title="Find the one seed of an existing world from structures and biomes seen in it (the SeedCrackerX method)">Crack the exact seed</button>
+          <p class="crackinfo" id="crackinfo"></p></div>
+      </div>
+      <div class="sec">
+        <h2>Add things <span class="tabs" role="tablist">
+          <button type="button" role="tab" id="tabS" aria-selected="true">Structures</button>
+          <button type="button" role="tab" id="tabB" aria-selected="false">Biomes</button></span></h2>
+        <div class="palette" id="palette" aria-label="Things you can place"></div>
+        <button type="button" id="unplace" class="ringonly" hidden>Remove</button>
+        <p class="hint ringonly">Drag a chip into a ring, or click it then click a ring. To remove one: drag it out of the rings, or click it then click Remove.</p>
+        <p class="hint seedsonly fixonly">Drag a structure into Fixed spots, or click it then click the box. Biomes go into a spot's "in" box the same way. Click a biome in that box to remove it.</p>
+      </div>
+    </aside>
+
+    <section class="rightcol">
+      <div class="mapbox">
+        <canvas id="map" aria-label="Map around the selected spot"></canvas>
+        <div class="maptitle" id="mtitle" hidden></div>
+        <div class="zoomtools"><button type="button" id="fzin" aria-label="Zoom in">+</button><button type="button" id="fzout" aria-label="Zoom out">−</button><button type="button" id="fxz" class="fade" aria-pressed="true" title="Show X above and Z below each structure">XZ</button></div>
+        <div class="hud pick" id="hud" hidden></div>
+        <div class="hud mouse" id="fhov" hidden></div>
+        <div class="mapempty" id="mempty">Pick a result to see the area around it.</div>
+      </div>
+      <div class="cols">
+        <div class="col exact">
+          <div class="colhead"><h2 id="hex">Exact matches</h2><span class="n" id="nex">0</span>
+            <p>Everything sits inside the ring you put it in. <span class="startnote">Closest to 0, 0 first.</span></p></div>
+          <div id="lex" class="col"></div>
+        </div>
+        <div class="col close">
+          <div class="colhead"><h2 id="hcl">Close matches</h2><span class="n" id="ncl">0</span>
+            <p>Everything is there, but something sits a bit outside its ring. Orange shows what's off. <span class="startnote">Closest to 0, 0 first.</span></p></div>
+          <div id="lcl" class="col"></div>
+        </div>
+      </div>
+      <p class="caveat">Generation follows the Java version picked at the top (1.18 to 26.3). Check a spot in game before you build. Biomes are checked every 16 blocks, so edges can be a few blocks off. A biome counts as in a ring when any part of it reaches into the ring. <span class="legal">Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</span></p>
+    </section>
+  </div>
+  </section>
+
+  <section class="pane" id="paneMap" role="tabpanel" aria-labelledby="tabMap" hidden>
+    <div class="explore">
+      <aside class="panel">
+        <div class="sec">
+          <h2>Go to</h2>
+          <form class="goto" id="gotoForm">
+            <label class="fld" for="gx">X <input type="number" id="gx"></label>
+            <label class="fld" for="gz">Z <input type="number" id="gz"></label>
+            <button type="submit">Go</button>
+          </form>
+          <label class="check" for="gNether" style="padding:0" id="gNetherL"><input type="checkbox" id="gNether"> <span id="gNetherT">These are Nether coordinates</span></label>
+          <div class="quick"><button type="button" id="goOrigin">0, 0</button><button type="button" id="goSpawn">World spawn</button></div>
+        </div>
+        <div class="sec">
+          <h2>Picked point</h2>
+          <div class="pinbox" id="pinbox"><p class="hint">Click the map to pick a point. Click a structure icon to pick that structure.</p></div>
+        </div>
+        <div class="sec">
+          <h2>Dimension</h2>
+          <div class="dimseg" role="group" aria-label="Dimension" id="dimseg">
+            <button type="button" data-dim="0" aria-pressed="true">Overworld</button><button type="button" data-dim="-1" aria-pressed="false">Nether</button><button type="button" data-dim="1" aria-pressed="false">End</button>
+          </div>
+          <p class="hint" id="dimHint">Switching between Overworld and Nether keeps the same spot (Nether = Overworld ÷ 8).</p>
+        </div>
+        <div class="sec">
+          <h2>Show on map <span class="minibtns"><button type="button" id="togAll">All</button><button type="button" id="togNone">None</button></span></h2>
+          <div class="toggles" id="toggles"></div>
+          <p class="hint" id="togHint">Structures appear once you zoom in to about 20,000 blocks across. Strongholds show at any zoom.</p>
+        </div>
+      </aside>
+      <div class="mapbox big">
+        <canvas id="xmap" aria-label="Seed map"></canvas>
+        <div class="maptitle" id="xdim">Overworld</div>
+        <div class="zoomtools"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button><button type="button" id="zxz" class="fade" aria-pressed="true" title="Show X above and Z below each structure">XZ</button></div>
+        <div class="mapnote" id="xnote" hidden></div>
+        <div class="hud pick" id="xhud" hidden></div>
+        <div class="hud mouse" id="xhov" hidden></div>
+        <div class="mapempty" id="xempty">Enter your seed above to see its map.</div>
+      </div>
+    </div>
+    <p class="caveat">Maps follow the Java version picked at the top. Each colour is a biome; hover to read its name. Drag to move, scroll or pinch to zoom. In the End, dark is void: the main island is exact, outer islands are drawn from their biomes, so small floating islands don't show.</p>
+  </section>
+
+  <section class="pane" id="paneLib" role="tabpanel" aria-labelledby="tabLib" hidden>
+    <div class="libwrap">
+      <aside class="panel">
+        <div class="sec libwarn" id="libVerNote" hidden></div>
+        <div class="sec">
+          <h2>Villager</h2>
+          <div class="uprow jobpick"><label class="fld upjob"><span>Job</span><select id="upJob" aria-label="Villager job"></select></label>
+            <label class="fld upvar" id="upVarL" hidden><span>Villager type</span><select id="upVar" aria-label="Villager type"></select></label></div>
+          <p class="hint upcheck" id="jobCheck" hidden>Not checked in game yet for this job: compare one level-up with the list before you rely on it.</p>
+        </div>
+        <div class="sec">
+          <h2>Where are you in the list?</h2>
+          <div class="libmodes" role="radiogroup" aria-label="Where you are">
+            <label class="check"><input type="radio" name="libmode" value="known"> I know my roll number <span class="mcnum"><button type="button" class="mcstep" data-for="libPosIn" data-step="-1" aria-label="One less">-</button><input type="number" id="libPosIn" min="0" step="1" aria-label="Roll number"><button type="button" class="mcstep" data-for="libPosIn" data-step="1" aria-label="One more">+</button></span></label>
+            <label class="check"><input type="radio" name="libmode" value="locate"> Find my position from the trades I see</label>
+          </div>
+          <div id="libLocate" class="libloc" hidden>
+            <div id="libLocJob" hidden>
+              <p class="hint">Enter the trades your villager offered on several rerolls in a row, oldest first (3 or more is best). Slot 1 is the top trade. The price is optional.</p>
+              <div id="jobObs"></div>
+              <div class="row2"><button type="button" id="jobObsAdd">+ Add the next roll</button><button type="button" class="go" id="jobObsGo" style="min-width:0">Find my position</button></div>
+              <div id="jobLocRes"></div>
+            </div>
+            <div id="libLocLib">
+            <p class="hint">Enter what your librarian offered on several rolls in a row, oldest first (3 or more is best). Slot 1 is the top trade. The price is optional.</p>
+            <div id="libObs"></div>
+            <div class="row2"><button type="button" id="libObsAdd">+ Add the next roll</button><button type="button" class="go" id="libObsGo" style="min-width:0">Find my position</button></div>
+            <div id="libLocRes"></div>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <h2 id="libYourH">Your librarian</h2>
+          <div id="libNext"></div>
+        </div>
+        <div class="sec" id="libWantSec">
+          <h2>Wanted books</h2>
+          <div class="libwant" id="libWant"></div>
+          <div class="libadd">
+            <select id="libAddE" aria-label="Book"></select>
+            <select id="libAddL" aria-label="Lowest level"></select>
+            <input type="number" id="libAddP" min="1" max="64" placeholder="max price" aria-label="Highest price in emeralds">
+            <button type="button" id="libAddB">Add</button>
+          </div>
+        </div>
+        <div class="sec" id="libHowSec">
+          <h2>How it works</h2>
+          <ul class="libhelp">
+            <li>Java 26.1 and newer only, with the Trade Rebalance experiment off. Not Bedrock.</li>
+            <li>All novice librarians in a world share one list of trades, fixed by the seed. Each time any novice librarian gets trades, anywhere, the list moves on by one.</li>
+            <li>One roll = break and replace the lectern, then open the trade menu. Open it every time: the trades may only be made when the menu first opens.</li>
+            <li>Don't trade with the librarian before you have the right book: once you trade, his offers are locked.</li>
+            <li>On a server, other players' librarians move the list too. If it stops matching, find your position again.</li>
+            <li>In-game prices can be different (discounts, demand). The book and its level are what count.</li>
+            <li>Only novice (level 1) librarians. Other jobs and levels have their own lists and change nothing here. The /randomsequence command can reset the list.</li>
+          </ul>
+        </div>
+      </aside>
+      <div class="libright">
+        <div class="libcards" id="libCards"></div>
+        <div class="libbar">
+          <label class="check"><input type="checkbox" id="libBooks"> Books only</label>
+          <label class="check"><input type="checkbox" id="libOnlyWant"> Wanted books only</label>
+          <label class="check" title="Put every enchanted book in the first column"><input type="checkbox" id="libLeft"> Books on the left</label>
+          <span class="libsp"></span>
+        </div>
+        <div class="libtable" id="libTableBox"><table id="libTable"><thead><tr><th>Roll</th><th title="How many rerolls from now, counting the next one as 1">Rerolls</th><th id="libTh1">Slot 1</th><th class="thp">Price</th><th id="libTh2">Slot 2</th></tr></thead><tbody id="libRows"></tbody></table><div id="libMore"></div></div>
+        <div class="libup" id="libUp">
+          <div class="uphead"><h2>Next level-ups</h2>
+            <div class="dimseg" id="upseg" role="group" aria-label="Villager level">
+              <button type="button" data-up="2" aria-pressed="true">Apprentice</button><button type="button" data-up="3" aria-pressed="false">Journeyman</button><button type="button" data-up="4" aria-pressed="false">Expert</button><button type="button" data-up="5" aria-pressed="false">Master</button>
+            </div></div>
+          <div id="upMain">
+            <p class="hint">Each time any villager of this job in the world reaches this level, he takes the next level-up from this list. A villager's trades are only picked when he gets the level, not when you lock him.</p>
+            <div class="uppos"><span>Next level-up:</span>
+              <span class="mcnum"><button type="button" class="mcstep" data-for="upPosIn" data-step="-1" aria-label="One less">-</button><input type="number" id="upPosIn" min="0" step="1" aria-label="Next level-up number"><button type="button" class="mcstep" data-for="upPosIn" data-step="1" aria-label="One more">+</button></span>
+              <button type="button" id="upInc" title="A villager of this job just reached this level somewhere: move the list on by one">One leveled up</button>
+              <button type="button" id="upFind">Find it from trades I see</button></div>
+            <div id="upFindBox" class="libloc" hidden>
+              <p class="hint">Enter the new trades a villager got when he reached this level, oldest level-up first. Slot 1 is the top one of the new trades. The price is optional.</p>
+              <div id="upObs"></div>
+              <div class="row2"><button type="button" id="upObsAdd">+ Add the next level-up</button><button type="button" class="go" id="upObsGo" style="min-width:0">Find my place</button></div>
+              <div id="upRes"></div>
+            </div>
+            <div class="upwant" id="upWantBox"></div>
+            <div class="libtable" id="upTableBox"><table id="upTable"><thead><tr id="upHead"></tr></thead><tbody id="upRows"></tbody></table><div id="upMore"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script type="text/plain" id="wsrc">/*WORKER*/</script>
+<script>
+/*ICONS*/
+</script>
+<script>
+/*SCRIPT*/</script>

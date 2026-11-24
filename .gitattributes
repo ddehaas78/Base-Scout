@@ -1,0 +1,5 @@
+# keep every text file with Unix line endings (LF), as the build scripts expect
+* text=auto eol=lf
+# binary files: never change them
+*.wasm binary
+*.png binary

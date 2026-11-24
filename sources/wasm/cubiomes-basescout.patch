@@ -1,0 +1,129 @@
+diff --git a/biomenoise.c b/biomenoise.c
+index 9002732..4db40a9 100644
+--- a/biomenoise.c
++++ b/biomenoise.c
+@@ -1480,7 +1480,31 @@ int climateToBiome(int mc, const uint64_t np[6], uint64_t *dat)
+         idx = get_resulting_node(np, bt, 0, 0, -1, 0);
+     }
+ 
+-    return (bt->nodes[idx] >> 48) & 0xFF;
++    int id = (bt->nodes[idx] >> 48) & 0xFF;
++    if (mc >= MC_1_21_WD && g_ext >= EXT_26_2)
++    {   // 26.2: sulfur caves, one underground entry
++        // T,H any; C [-0.19,0.55]; E [0.45,1]; D [0.2,0.9]; W [-1.1,-0.85]
++        static const int64_t sc[6][2] = {
++            {-10000,10000},{-10000,10000},{-1900,5500},{4500,10000},{2000,9000},{-11000,-8500} };
++        uint64_t ds = 0, a, b, d;
++        int i;
++        for (i = 0; i < 6; i++) {
++            a = np[i] - (uint64_t)sc[i][1];
++            b = (uint64_t)sc[i][0] - np[i];
++            d = (int64_t)a > 0 ? a : (int64_t)b > 0 ? b : 0;
++            ds += d * d;
++        }
++        if (ds < get_np_dist(np, bt, idx))
++            return sulfur_caves;
++    }
++    if (mc >= MC_1_21_WD && g_ext >= EXT_26_3 && id == plains)
++    {   // 26.3: MIDDLE_BIOMES_VARIANT[1][0] = dappled forest, i.e. plains of the
++        // cold (T -0.45..-0.15) and driest (H -1..-0.35) band, wherever weirdness >= -0.05
++        int64_t t = (int64_t)np[0], h = (int64_t)np[1], w = (int64_t)np[5];
++        if (t >= -4500 && t <= -1500 && h >= -10000 && h <= -3500 && w >= -500)
++            return dappled_forest;
++    }
++    return id;
+ }
+ 
+ 
+diff --git a/biomes.c b/biomes.c
+index 03c82a5..8bf0211 100644
+--- a/biomes.c
++++ b/biomes.c
+@@ -2,8 +2,12 @@
+ #include <inttypes.h>
+ 
+ 
++int g_ext = EXT_NONE;
++
+ int biomeExists(int mc, int id)
+ {
++    if (id == dappled_forest) return mc >= MC_1_21_WD && g_ext >= EXT_26_3;
++    if (id == sulfur_caves)   return mc >= MC_1_21_WD && g_ext >= EXT_26_2;
+     if (mc >= MC_1_18)
+     {
+         if (id >= soul_sand_valley && id <= basalt_deltas)
+@@ -204,6 +208,9 @@ int isOverworld(int mc, int id)
+     case dripstone_caves:
+     case lush_caves:
+         return mc >= MC_1_18;
++    case dappled_forest:
++    case sulfur_caves:
++        return 1;   // biomeExists() above already checked the version
+     }
+     return 1;
+ }
+diff --git a/biomes.h b/biomes.h
+index eaf85ff..4852de6 100644
+--- a/biomes.h
++++ b/biomes.h
+@@ -2,6 +2,12 @@
+ #define BIOMES_H_
+ 
+ /* Minecraft versions */
++// Base Scout patch: generation changes after 1.21.4 (from the game's data files), set per version.
++// 0 = 1.21.4 or older, 1 = 1.21.5+, 2 = 1.21.9+, 3 = 26.2+, 4 = 26.3+
++enum { EXT_NONE, EXT_1_21_5, EXT_1_21_9, EXT_26_2, EXT_26_3 };
++extern int g_ext;
++enum { dappled_forest = 187, sulfur_caves = 188 };   // biomes newer than cubiomes
++
+ enum MCVersion
+ {   // MC_1_X refers to the latest patch of the respective 1.X release.
+     // NOTE: Development effort focuses on just the newest patch for each major
+diff --git a/finders.c b/finders.c
+index 783d5ec..2085bba 100644
+--- a/finders.c
++++ b/finders.c
+@@ -826,6 +826,12 @@ int isStrongholdBiome(int mc, int id)
+     case mangrove_swamp:
+     case deep_dark:
+         return 0;
++    case cherry_grove:
++        return mc >= MC_1_21_WD && g_ext >= EXT_1_21_9;
++    case dappled_forest:
++        return 0;
++    case sulfur_caves:
++        return 1;
+     default:
+         return 1;
+     }
+@@ -1238,7 +1244,7 @@ int isViableFeatureBiome(int mc, int structureType, int biomeID)
+         return biomeID == beach || biomeID == snowy_beach;
+ 
+     case Mineshaft:
+-        return isOverworld(mc, biomeID);
++        return isOverworld(mc, biomeID) && biomeID != deep_dark;
+ 
+     case Desert_Well:
+         return biomeID == desert;
+@@ -1282,6 +1288,7 @@ int isViableFeatureBiome(int mc, int structureType, int biomeID)
+ 
+     case Mansion:
+         if (mc <= MC_1_10) return 0;
++        if (biomeID == pale_garden && mc >= MC_1_21_WD && g_ext >= EXT_1_21_5) return 1;
+         return biomeID == dark_forest || biomeID == dark_forest_hills;
+ 
+     case Fortress:
+diff --git a/util.c b/util.c
+index 18fa7a7..3ad25f5 100644
+--- a/util.c
++++ b/util.c
+@@ -271,6 +271,9 @@ const char *biome2str(int mc, int id)
+     case cherry_grove: return "cherry_grove";
+     // 1.21.4 (Winter Drop)
+     case pale_garden: return "pale_garden";
++    // 26.2 and 26.3 (Base Scout patch)
++    case sulfur_caves: return "sulfur_caves";
++    case dappled_forest: return "dappled_forest";
+     }
+     return NULL;
+ }
