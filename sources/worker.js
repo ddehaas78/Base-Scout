@@ -105,6 +105,18 @@ function biomes(scale, cx0, cz0, w, h, y = SAMPLE_Y) {
   E.dealloc(p); return g;
 }
 
+// The biome at the candidate cells of a tile only (others stay -1); each row asks only from its first to its last candidate.
+function candidateBiomes(cand, TC, mi, ma, mj, mb, gx0, gz0, GW, GH) {
+  const grid = new Int32Array(GW * GH).fill(-1);
+  for (let j = mj; j <= mb; j++) {
+    let i0 = -1, i1 = -1;
+    for (let i = mi; i <= ma; i++) if (cand[j * TC + i]) { if (i0 < 0) i0 = i; i1 = i; }
+    if (i0 < 0) continue;
+    const row = biomes(CELL, gx0 + (i0 - mi), gz0 + (j - mj), i1 - i0 + 1, 1);
+    grid.set(row, (j - mj) * GW + (i0 - mi));
+  }
+  return grid;
+}
 // Cave biomes are underground: look at 4 depths (blocks 16, -8, -32, -56) and count the biome if it is at any of them.
 const CAVE_KEYS = new Set(['dripstone', 'lush', 'deepdark', 'sulfur']), CAVE_Y = [4, -2, -8, -14];   // y in quarter blocks
 function caveGrids(scale, cx0, cz0, w, h) { return CAVE_Y.map(y => biomes(scale, cx0, cz0, w, h, y)); }
@@ -204,7 +216,8 @@ function searchTile(items, x0, z0, landOnly, RADII) {
   const padC = Math.ceil(padB / CELL);
   const gx0 = tc0x + mi - padC, gz0 = tc0z + mj - padC, GW = (ma - mi + 1) + 2 * padC, GH = (mb - mj + 1) + 2 * padC;
 
-  const grid = biomes(CELL, gx0, gz0, GW, GH);
+  // without biome items only the candidate cells need a biome (land check, result label): one short run per row
+  const grid = bItems.length ? biomes(CELL, gx0, gz0, GW, GH) : candidateBiomes(cand, TC, mi, ma, mj, mb, gx0, gz0, GW, GH);
   // A sized biome only counts where a disc of that size fits inside it ("core" cells);
   // its distance is then measured to the edge of that disc.
   const bcores = [];
@@ -451,6 +464,10 @@ function checkSpot(items, x, z, RADII, landOnly, quick) {
     const d = raw.map(p => Math.hypot(p.x - x, p.z - z)).sort((a, b) => a - b);
     if (rs.some((r, q) => !(d[q] <= r))) return null;
   }
+  // the land check needs one biome cell: before the real structures, which cost more
+  const bItems = items.filter(i => i.kind === 'biome');
+  let here = null;
+  if (landOnly) { here = biomes(CELL, Math.floor(x / CELL), Math.floor(z / CELL), 1, 1)[0]; if (WATER.has(here)) return null; }
   // 2. the real structures (strongholds: rough spots first, the real ones cost about 12 ms each)
   const sh = groups.get('stronghold');
   if (sh && !strongholdsMaybe(x, z, sh[sh.length - 1], sh.length)) return null;
@@ -463,12 +480,10 @@ function checkSpot(items, x, z, RADII, landOnly, quick) {
     }
   }
   // 3. biomes
-  const bItems = items.filter(i => i.kind === 'biome');
-  let here = null;
-  if (bItems.length || landOnly) {
+  if (bItems.length) {
     const pad = Math.max(16, ...bItems.map(i => RADII[i.zone] + (i.size || 0) / 2));
     const c0x = Math.floor((x - pad) / 64), c0z = Math.floor((z - pad) / 64), cw = Math.ceil(2 * pad / 64) + 2;
-    if (bItems.length) {   // coarse look (every 64 blocks): drop seeds where a biome is nowhere near
+    {   // coarse look (every 64 blocks): drop seeds where a biome is nowhere near
       const coarse = new Set(biomes(64, c0x, c0z, cw, cw));
       const coarseCave = lazy(() => new Set(caveGrids(64, c0x, c0z, cw, cw).flatMap(g => [...g])));
       if (bItems.some(it => !BIOME_IDS[it.key].some(b => (CAVE_KEYS.has(it.key) ? coarseCave() : coarse).has(b)))) return null;
@@ -476,7 +491,6 @@ function checkSpot(items, x, z, RADII, landOnly, quick) {
     const gx0 = Math.floor((x - pad) / CELL) - 1, gz0 = Math.floor((z - pad) / CELL) - 1, G = Math.ceil(2 * pad / CELL) + 3;
     const grid = biomes(CELL, gx0, gz0, G, G), ci = Math.floor(x / CELL) - gx0, cj = Math.floor(z / CELL) - gz0;
     here = grid[cj * G + ci];
-    if (landOnly && WATER.has(here)) return null;
     const caves = lazy(() => caveGrids(CELL, gx0, gz0, G, G));
     for (const it of bItems) {
       const mask = biomeMask(it.key, grid, caves), half = (it.size || 0) / 2, r = RADII[it.zone];

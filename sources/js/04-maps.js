@@ -36,7 +36,7 @@ function MapView(o) {
     const keys = o.keys(S, span), sig = keys.join(',') + '|' + JSON.stringify(o.ver());
     if (!force && M.layers.some(L => L.scale <= S && L.sig === sig && L.bx0 <= x0 && L.bz0 <= z0 && L.bx1 >= x1 && L.bz1 >= z1)) return;
     M.busy = ++M.req;
-    worker.postMessage({ type: 'area', seed, ver: o.ver(), dim: o.dim ? o.dim() : 0, tag: M.name + ':' + M.gen + ':' + M.req, x: Math.round((x0 + x1) / 2), z: Math.round((z0 + z1) / 2),
+    (mapReady ? mapWorker : worker).postMessage({ type: 'area', seed, ver: o.ver(), dim: o.dim ? o.dim() : 0, tag: M.name + ':' + M.gen + ':' + M.req, x: Math.round((x0 + x1) / 2), z: Math.round((z0 + z1) / 2),
       scale: S, halfX: Math.round((x1 - x0) * 0.65), halfZ: Math.round((z1 - z0) * 0.65), keys, sig });
   };
   M.onArea = m => {
@@ -45,8 +45,8 @@ function MapView(o) {
     if (gen === M.gen) {
       const c = document.createElement('canvas'); c.width = m.W; c.height = m.H;
       const g = c.getContext('2d'), d = g.createImageData(m.W, m.H);
-      const lut = paletteFor(m.dim || 0);
-      for (let k = 0; k < m.W * m.H; k++) { const b = m.grid[k] < 0 ? 256 : m.grid[k]; d.data[k*4] = lut[b*3]; d.data[k*4+1] = lut[b*3+1]; d.data[k*4+2] = lut[b*3+2]; d.data[k*4+3] = 255; }
+      const lut = paletteFor32(m.dim || 0), px = new Uint32Array(d.data.buffer), grid = m.grid;
+      for (let k = 0, n = m.W * m.H; k < n; k++) { const b = grid[k]; px[k] = lut[b < 0 ? 256 : b]; }
       g.putImageData(d, 0, 0);
       M.layers.push({ scale: m.scale, cx0: m.cx0, cz0: m.cz0, W: m.W, H: m.H, grid: m.grid, img: c, sig: m.sig, n: ++M.n,
         bx0: m.cx0 * m.scale, bz0: m.cz0 * m.scale, bx1: (m.cx0 + m.W) * m.scale, bz1: (m.cz0 + m.H) * m.scale });
@@ -77,8 +77,11 @@ function MapView(o) {
     const id = L.grid[(Math.floor(z / L.scale) - L.cz0) * L.W + (Math.floor(x / L.scale) - L.cx0)];
     return id < 0 ? 'void' : names[id];
   };
-  let viewT;
-  M.changed = () => { M.draw(); clearTimeout(viewT); viewT = setTimeout(() => M.request(false), 200); };
+  let viewT, frame = 0;   // pan and zoom events come faster than the screen: draw once per frame
+  M.changed = () => {
+    if (!frame) frame = requestAnimationFrame(() => { frame = 0; M.draw(); });
+    clearTimeout(viewT); viewT = setTimeout(() => M.request(false), 200);
+  };
   M.zoomAt = (sx, sy, f) => {
     const ns = Math.max(Math.max(cv.width, cv.height) / (typeof o.maxSpan === 'function' ? o.maxSpan() : o.maxSpan), Math.min(12, M.view.s * f)), [wx, wz] = M.toWorld(sx, sy);
     M.view.s = ns; M.view.ox = wx - sx / ns; M.view.oy = wz - sy / ns; M.changed();
@@ -123,13 +126,35 @@ function paletteFor(dim) {
   if (dim === 1) { set(9, '#e9e5b1'); set(42, '#dcd79f'); set(41, '#cdc78f'); set(43, '#b5af78'); set(40, '#0d0b12'); }
   return (PAL[dim] = t);
 }
+// the same colours as one 32-bit pixel each (RGBA in memory order), to fill map images in one write per pixel
+const PAL32 = {};
+function paletteFor32(dim) {
+  if (PAL32[dim]) return PAL32[dim];
+  const t = paletteFor(dim), out = new Uint32Array(257), b = new Uint8Array(out.buffer);
+  for (let i = 0; i < 257; i++) { b[i*4] = t[i*3]; b[i*4+1] = t[i*3+1]; b[i*4+2] = t[i*3+2]; b[i*4+3] = 255; }
+  return (PAL32[dim] = out);
+}
 
 // Draw structure icons of the given keys. tile: light backing square behind each icon.
 const RING = { bas_treasure: '#e8b628', bas_units: '#3e9ee0', bas_hoglin: '#e0773a', bas_bridge: '#8f8fa0' };
 const DRAW_ORDER = ['trial', 'village', 'monument', 'outpost', 'pyramid', 'hut', 'retgate', 'endcity', 'mansion', 'ancient', 'fortress', 'bas_units', 'bas_hoglin', 'bas_bridge', 'bas_treasure', 'gatexit', 'gateway', 'endship', 'stronghold'];
+let ICON_ORDER = null;
+// the dark square with its soft shadow, drawn once per size (a canvas shadow is slow to draw icon by icon)
+const BACKS = new Map();
+function iconBack(sz, d) {
+  const k = sz + '|' + d; let b = BACKS.get(k);
+  if (b) return b;
+  const pad = 3 * d, m = 8 * d, w = Math.ceil(sz + 2 * pad + 2 * m), c = document.createElement('canvas'); c.width = c.height = w;
+  const g = c.getContext('2d');
+  g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 5 * d; g.shadowOffsetY = 1 * d;
+  g.fillStyle = 'rgba(14,16,15,.9)'; g.beginPath(); g.roundRect(m, m, sz + 2 * pad, sz + 2 * pad, 4 * d); g.fill();
+  if (BACKS.size > 40) BACKS.clear();
+  BACKS.set(k, b = { c, off: sz / 2 + pad + m });
+  return b;
+}
 function drawIcons(M, keys, sizeFor, tile) {
   const { ctx, cv } = M, d = drawScale();
-  const order = ALL_STRUCTS.slice().sort((a, b) => DRAW_ORDER.indexOf(a.key) - DRAW_ORDER.indexOf(b.key));
+  const order = ICON_ORDER || (ICON_ORDER = ALL_STRUCTS.slice().sort((a, b) => DRAW_ORDER.indexOf(a.key) - DRAW_ORDER.indexOf(b.key)));
   for (const s of order) {
     if (!keys.has(s.key) || !M.structs[s.key]) continue;
     const sz = sizeFor(s.key) * d, ic = ICONS[s.key];
@@ -138,9 +163,9 @@ function drawIcons(M, keys, sizeFor, tile) {
       if (x < -30 || y < -30 || x > cv.width + 30 || y > cv.height + 30) continue;
       const t = tile(s.key, sz);
       if (t) {   // dark square behind the icon; its border is the bastion colour, or the colour asked for (t)
-        const pad = 3 * d;
-        ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 5 * d; ctx.shadowOffsetY = 1 * d;
-        ctx.fillStyle = 'rgba(14,16,15,.9)'; ctx.beginPath(); ctx.roundRect(x - sz/2 - pad, y - sz/2 - pad, sz + 2*pad, sz + 2*pad, 4 * d); ctx.fill(); ctx.restore();
+        const pad = 3 * d, back = iconBack(sz, d);
+        ctx.drawImage(back.c, x - back.off, y - back.off);
+        ctx.beginPath(); ctx.roundRect(x - sz/2 - pad, y - sz/2 - pad, sz + 2*pad, sz + 2*pad, 4 * d);
         const ring = RING[s.key];
         ctx.lineWidth = (ring || typeof t === 'string' ? 2.5 : 1.5) * d; ctx.strokeStyle = ring || (typeof t === 'string' ? t : 'rgba(245,247,244,.85)'); ctx.stroke();
       } else if (M === xMap) {

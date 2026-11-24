@@ -1,5 +1,5 @@
 // ---------- Find seeds: try many random seeds, keep those whose rings are filled ----------
-// Same rings, Dimension, Start from and Base on land as "This seed", but the point is fixed (spawn, 0, 0 or
+// Same rings, Dimension, and Start from as "This seed", but the point is fixed (spawn, 0, 0 or
 // custom) and the seed changes. The search runs in a few extra workers (one per spare CPU core).
 let findMode = 'seed';   // 'seed' = search one seed for spots, 'seeds' = search many seeds
 const SF_MAX = 200;
@@ -80,7 +80,7 @@ function startSeeds(more) {
   if (missing.length && !more) toast(`Left out, not in ${VER}: ${missing.join(', ')}`);
   if (!more) { sf.found = []; sf.tested = 0; sf.ms = 0; sel = null; findMap.reset(); findMap.draw(); shown = { exact: 12, close: 6 }; }
   sf.job = { mode: 'seeds', ver: curVer(), verLabel: VER, items: usable.map(p => ({ ...p })), radii: RADII.slice(), dim: findDim,
-    start: $('start').value, custom: { x: +$('cx').value || 0, z: +$('cz').value || 0 }, landOnly: findDim === 0 && $('land').checked, pins };
+    start: $('start').value, custom: { x: +$('cx').value || 0, z: +$('cz').value || 0 }, landOnly: findDim === 0, pins };
   job = sf.job;
   sf.base = sf.tested; sf.msBase = sf.ms; sf.perWorker = []; sf.t0 = Date.now(); sf.token++; sf.running = true;
   const msg = { type: 'seeds', ...sf.job, token: sf.token };
@@ -102,7 +102,7 @@ const usablePins = () => fixed().filter(f => inVer(f.key) && (isBioSpot(f) || !f
 const sameSeedJob = () => sf.job && sf.job.mode === 'seeds' && sf.found.length && sf.found.length < SF_MAX
   && (seedsSub === 'rings'
     ? !(sf.job.pins || []).length && JSON.stringify(sf.job.items) === JSON.stringify(placed.filter(p => inVer(p.key)))
-      && sf.job.radii.join() === RADII.join() && sf.job.start === $('start').value && sf.job.landOnly === (findDim === 0 && $('land').checked)
+      && sf.job.radii.join() === RADII.join() && sf.job.start === $('start').value && sf.job.landOnly === (findDim === 0)
     : JSON.stringify(sf.job.pins || []) === JSON.stringify(usablePins()))
   && sf.job.dim === findDim && sf.job.verLabel === VER;
 function seedStatus() {

@@ -23,7 +23,7 @@ const xMap = MapView({
   overlay: M => {
     const { ctx, cv } = M, d = drawScale(), v = M.view;
     $('xempty').hidden = !!M.layers.length;
-    if (!$('xhov').textContent) $('xhov').textContent = 'Point at the map to read its coordinates';
+    if (!$('xhov').textContent) setText($('xhov'), 'Point at the map to read its coordinates');
     $('xhud').hidden = !M.layers.length || !$('xhud').textContent; $('xhov').hidden = !M.layers.length;
     if (!M.layers.length) { $('xnote').hidden = true; return; }
     // chunk grid when close in
@@ -77,7 +77,7 @@ const xMap = MapView({
     }
     const hidden = dimKeys().some(k => shownKeys.has(k) && !spanOK(k, span));
     $('xnote').hidden = !hidden;
-    $('xnote').textContent = close ? 'Zoom in more to see the smaller structures' : 'Zoom in to see structures';
+    setText($('xnote'), close ? 'Zoom in more to see the smaller structures' : 'Zoom in to see structures');
     if (xSpawn && xDim === 0) {   // spawn: white cross in a dark ring
       const [x, y] = M.scr(xSpawn.x, xSpawn.z);
       ctx.beginPath(); ctx.arc(x, y, 9 * d, 0, Math.PI * 2); ctx.fillStyle = 'rgba(10,14,12,.8)'; ctx.fill();
@@ -93,9 +93,10 @@ const xMap = MapView({
     const was = xHover; xHover = s;
     if ((was && was.x) !== (s && s.x) || (was && was.z) !== (s && s.z)) M.draw();
     $('xmap').style.cursor = s ? 'pointer' : '';
-    $('xhov').hidden = false; $('xhov').innerHTML = s ? coordsHTML(s.x, s.z, xDim, s.name, 'Cursor', true) : coordsHTML(x, z, xDim, b, 'Cursor', true);
+    $('xhov').hidden = false; setHTML($('xhov'), s ? coordsHTML(s.x, s.z, xDim, s.name, 'Cursor', true) : coordsHTML(x, z, xDim, b, 'Cursor', true));
   },
   click: (M, x, z, sx, sy) => {
+    if (seedRoute && seedRoute.on) { seedRoute.click(M, x, z, sx, sy); return; }   // route mode: clicks add or take out stops (js/06b-route.js)
     const s = structAt(M, shownKeys, sx, sy, 18);
     pin = s ? { x: s.x, z: s.z, label: s.n ? (s.key === 'gateway' ? `Gateway ${s.n}` : `Exit of gateway ${s.n}`) : s.key === 'fossil' && s.deep ? 'Deep fossil' : s.name, q: s } : { x, z, label: null };
     renderPin(); M.draw();
@@ -229,7 +230,7 @@ function setDim(d, quiet) {
   else { xMap.fitTo(0, 0, d === 1 ? 1500 : 2500); pin = null; }
   try { localStorage.setItem('basescout.dim', String(d)); } catch {}
   xMap.reset(); renderDimUI(); renderToggles(); renderPin();
-  $('xhov').textContent = '';   // the next draw puts the placeholder back
+  setText($('xhov'), '');   // the next draw puts the placeholder back
   if (!quiet) { xMap.draw(); xMap.request(true); }
 }
 $('xmap').addEventListener('pointerleave', () => { if (xHover) { xHover = null; xMap.draw(); } });   // the mouse bar keeps the last position

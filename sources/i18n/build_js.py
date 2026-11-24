@@ -31,14 +31,22 @@ const WORDS = {
   showMore: W('Afficher {n} de plus', 'Mostrar {n} más', '{n} weitere zeigen', 'Mostra altri {n}', 'Mostrar mais {n}', 'Pokaż {n} więcej', '{n} meer tonen'),
   ring: W('Cercle {n} : blocs de large', 'Anillo {n}: bloques de ancho', 'Ring {n}: Blöcke breit', 'Anello {n}: blocchi di larghezza', 'Anel {n}: blocos de largura', 'Pierścień {n}: bloków szerokości', 'Ring {n}: blokken breed'),
   fromZero: W('à {n} de 0, 0', 'a {n} de 0, 0', '{n} von 0, 0', 'a {n} da 0, 0', 'a {n} de 0, 0', '{n} od 0, 0', '{n} van 0, 0'),
+  shorter: W('Plus court de {n} blocs', 'Más corto en {n} bloques', '{n} Blöcke kürzer', 'Più breve di {n} blocchi', 'Mais curto em {n} blocos', 'Krótsza o {n} bloków', '{n} blokken korter'),
   patch: W('Taille minimale de la zone de {b}', 'Tamaño mínimo de la zona de {b}', 'Wie groß das Gebiet {b} sein muss', 'Dimensione minima della zona di {b}', 'Tamanho mínimo da área de {b}', 'Jak duży musi być obszar: {b}', 'Hoe groot het gebied {b} moet zijn'),
 };
 let uiLang = 'en';
 try { uiLang = localStorage.getItem('basescout.lang') || ''; } catch {}
 if (!LANGS.some(l => l[0] === uiLang)) { const n = (navigator.language || 'en').slice(0, 2); uiLang = LANGS.some(l => l[0] === n) ? n : 'en'; }
 const keepCase = (src, t) => src === src.toLowerCase() && uiLang !== 'de' ? t.toLowerCase() : t;
+// translations are looked up again and again (tables redraw): remember them for the current language
+const TR_CACHE = new Map();
 function tr(s) {
   if (uiLang === 'en' || !s) return s;
+  let t = TR_CACHE.get(s);
+  if (t === undefined) { if (TR_CACHE.size > 6000) TR_CACHE.clear(); TR_CACHE.set(s, t = trRaw(s)); }
+  return t;
+}
+function trRaw(s) {
   const i = LI[uiLang], u = I18N_UI[s];
   if (u) return u[i];
   const g = I18N_GAME[s.toLowerCase()];
@@ -51,6 +59,7 @@ function tr(s) {
   if ((m = s.match(/^roll (\d+)$/))) return `${I18N_UI.Roll[i].toLowerCase()} ${m[1]}`;
   if ((m = s.match(/^Roll (\d+): (.+),$/))) return `${I18N_UI.Roll[i]} ${m[1]} : ${tr(m[2])},`;
   if ((m = s.match(/^Show ([\d,]+) more$/))) return w('showMore').replace('{n}', m[1]);
+  if ((m = s.match(/^Shorter by ([\d,]+) blocks$/))) return w('shorter').replace('{n}', m[1]);
   if ((m = s.match(/^Ring (\d): blocks across$/))) return w('ring').replace('{n}', m[1]);
   if ((m = s.match(/^(.+): tap to remove$/))) return `${tr(m[1])} : ${w('tapRemove')}`;
   if ((m = s.match(/^(.+) \(placed, drag to move\)$/))) return `${tr(m[1])} (${w('placed')})`;
@@ -86,12 +95,14 @@ function trAttrs(el) {
     rec[a] = [en, out]; if (v !== out) el.setAttribute(a, out);
   }
 }
-const skipI18n = el => !el || el.closest('script,style,#lang,[data-noi18n],.saved .sn');
+// inside the walker each element only needs matches(): its parents were already let through
+const I18N_SKIP = 'script,style,#lang,[data-noi18n],.saved .sn';
+const skipI18n = el => !el || el.closest(I18N_SKIP);
 function trTree(root) {
   if (root.nodeType === 3) { if (!skipI18n(root.parentElement)) trNode(root); return; }
   if (root.nodeType !== 1 || skipI18n(root)) return;
   trAttrs(root);
-  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, { acceptNode: e => e.nodeType === 1 && skipI18n(e) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, { acceptNode: e => e.nodeType === 1 && e.matches(I18N_SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
   let n; while ((n = w.nextNode())) { if (n.nodeType === 3) trNode(n); else trAttrs(n); }
 }
 new MutationObserver(list => {
@@ -102,7 +113,7 @@ new MutationObserver(list => {
   }
 }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: I18N_ATTRS });
 function setUiLang(l) {
-  uiLang = l; try { localStorage.setItem('basescout.lang', l); } catch {}
+  uiLang = l; TR_CACHE.clear(); try { localStorage.setItem('basescout.lang', l); } catch {}
   document.documentElement.lang = l; $('lang').value = l;
   trTree(document.body);
 }

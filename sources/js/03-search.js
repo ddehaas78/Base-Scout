@@ -24,7 +24,7 @@ function startSearch(resume = false) {
   if (!usable.length) { toast(`None of these exist in ${VER}. Pick a newer version.`); return; }
   if (missing.length && !resume) toast(`Left out, not in ${VER}: ${missing.join(', ')}`);
   if (!resume) { exact = []; close = []; shown = { exact: 6, close: 6 }; sel = null; findMap.reset(); findMap.draw(); tilesDone = 0; renderResults(); }
-  job = { seed, ver: curVer(), verLabel: VER, items: usable.map(p => ({ ...p })), start: $('start').value, custom: { x: +$('cx').value || 0, z: +$('cz').value || 0 }, landOnly: findDim === 0 && $('land').checked, radii: RADII.slice(), dim: findDim };
+  job = { seed, ver: curVer(), verLabel: VER, items: usable.map(p => ({ ...p })), start: $('start').value, custom: { x: +$('cx').value || 0, z: +$('cz').value || 0 }, landOnly: findDim === 0, radii: RADII.slice(), dim: findDim };
   token++;
   worker.postMessage({ type: 'search', ...job, token, skipTiles: resume ? tilesDone : 0, maxTiles: 1500 });
   setRunning(true);

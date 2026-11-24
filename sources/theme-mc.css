@@ -191,8 +191,8 @@ select { cursor: pointer; }
 #libTable th#libTh1, #libTable th.thp { width: 1%; white-space: nowrap; padding-right: 22px; }   /* book column as wide as its longest name: the price sits right next to it */
 #libTable td { white-space: nowrap; }
 
-/* Start from, X, Z and Base on land on one line */
-.startrow { display: grid !important; grid-template-columns: auto minmax(52px, 1fr) minmax(52px, 1fr) auto; gap: 8px !important; align-items: end; }
+/* Start from, X and Z on one line */
+.startrow { display: grid !important; grid-template-columns: auto minmax(52px, 1fr) minmax(52px, 1fr); gap: 8px !important; align-items: end; }
 .startrow .fld { min-width: 0; }
 .startrow #cx, .startrow #cz { width: 100% !important; min-width: 0; box-sizing: border-box; }
 .startrow select { width: auto; }
@@ -281,3 +281,53 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .panel .upcheck { margin: 6px 0 0; color: #ffaa00; }
 #libTable .joffer { flex-wrap: nowrap; }
 #libHowSec[hidden] { display: none !important; }
+
+/* Villager: level-ups made easier to read. One big card for the next villager to reach the level, then the list */
+.libup .uphow { color: #c8c8c8; font-size: 12.5px; line-height: 1.45; }
+.upnow { display: grid; gap: 8px; padding: 10px 12px; background: rgba(0,0,0,.45); box-shadow: inset 0 0 0 2px #000, inset 2px 2px 0 2px #3a3a3a; }
+.upnow[hidden] { display: none !important; }
+.upnow.want { box-shadow: inset 0 0 0 2px #000, inset 0 0 0 4px #55ff55; }
+.upnowh { font-family: var(--mc); font-size: 14px; color: #fff; text-shadow: var(--shadow); }
+.upoffers { display: flex; flex-wrap: wrap; gap: 8px; }
+.upoffer { display: inline-flex; align-items: center; padding: 6px 10px; background: #8b8b8b; box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff; }
+.upoffer .offer, .upoffer .joffer { font-size: 14px; }
+.upoffer img.mci { width: 20px !important; height: 20px !important; }
+.upoffer.want { outline: 2px solid #55ff55; outline-offset: 1px; }
+.upnowbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.upnowbtns button { padding: 6px 12px; }
+.upnowbtns button.go { min-width: 0; }
+.upnowbtns button[hidden] { display: none !important; }
+.libup .uptip { color: #a8a8a8; font-size: 12px; }
+.uplast { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: #a8a8a8; opacity: .85; }
+.uplast:empty { display: none; }
+.uplast .sep, .upwant .sep { color: #6a6a6a; margin: 0 2px; }
+.upwant h3 { margin: 0 0 2px; font-family: var(--mc); font-size: 12px; color: #a8a8a8; font-weight: normal; }
+.upwant .upskip { color: #a8a8a8; }
+.upwant .upskip .upn { color: #ffaa00; }
+#upTable td.num { white-space: nowrap; color: #c8c8c8; font-family: var(--mc); }
+#upTable .upnext { color: #55ff55; }
+#upTable th:nth-child(1) { width: 1%; white-space: nowrap; }
+
+/* Seed map: route (button under XZ, list of stops on the left) */
+.zoomtools button.route { display: grid; place-items: center; }
+.zoomtools button.route svg { display: block; }
+#zrouteSec[hidden], #frouteSec[hidden] { display: none !important; }
+.routebox { position: absolute; left: 10px; top: 44px; z-index: 3; width: min(360px, calc(100% - 70px)); max-height: 55%; overflow-y: auto; display: grid; gap: 6px; padding: 8px 10px;
+  background: rgba(0,0,0,.82); box-shadow: inset 0 0 0 2px #000, inset 2px 2px 0 2px #3a3a3a; }
+.routebox .rhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.routebox .rhead b { font-family: var(--mc); font-weight: normal; color: #fff; text-shadow: var(--shadow); font-size: 13px; }
+.routebox .minibtns button { padding: 2px 6px; font-size: 11px; }
+.routebox .hint { margin: 0; color: #a8a8a8; font-size: 12px; }
+.routelist { display: grid; gap: 3px; }
+.rstop { display: grid; grid-template-columns: 18px 18px minmax(0, 1fr) auto auto 20px; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer;
+  font-size: 12px; color: #e0e0e0; background: rgba(255,255,255,.04); }
+.rstop:hover { background: rgba(255,255,85,.12); }
+.rstop .rn { font-family: var(--mc); color: #000; background: #ffff55; text-align: center; font-size: 11px; line-height: 16px; height: 16px; }
+.rstop img.ico { width: 16px; height: 16px; image-rendering: pixelated; }
+.rstop .rdot { width: 10px; height: 10px; justify-self: center; background: #ffff55; border: 2px solid #000; border-radius: 50%; }
+.rstop .rname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rstop .rxz { font-family: var(--mc); color: #fff; white-space: nowrap; }
+.rstop .rd { font-family: var(--mc); color: #ffff55; font-size: 11px; white-space: nowrap; min-width: 0; }
+.rstop button.rx { padding: 0 !important; width: 20px; height: 20px; font-size: 13px; line-height: 1; }
+.rtotal { margin-top: 4px; font-family: var(--mc); font-size: 12.5px; color: #c8c8c8; }
+.rtotal b { color: #ffff55; font-weight: normal; }

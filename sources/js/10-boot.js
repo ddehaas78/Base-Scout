@@ -10,7 +10,6 @@ $('start').onchange = () => { const c = $('start').value === 'custom'; $('cxl').
 // the browser can bring back "Custom X / Z" by itself (reload, back button) without a change event
 $('start').onchange();
 addEventListener('pageshow', () => $('start').onchange());
-$('land').onchange = restartSoon;
 $('form').onsubmit = e => {
   e.preventDefault();
   if (findMode === 'seeds') { if (sf.running) stopSeeds(); else startSeeds(sameSeedJob()); return; }
@@ -40,7 +39,7 @@ function saveState() {
     placedStore[findDim] = placed;
     const [mx, mz] = xMap.center();
     localStorage.setItem(STATE_KEY, JSON.stringify({
-      findDim, placedStore, fixedStore, radii: RADII, start: $('start').value, cx: $('cx').value, cz: $('cz').value, land: $('land').checked,
+      findDim, placedStore, fixedStore, radii: RADII, start: $('start').value, cx: $('cx').value, cz: $('cz').value,
       xview: xMap.cv.width > 4 && !xRestore ? { x: mx, z: mz, s: xMap.view.s } : xRestore,
       pin: pin ? { x: pin.x, z: pin.z, label: pin.label, q: pin.q || null } : null,
       res: (() => {   // the "This seed" search, even while Find seeds is shown
@@ -68,11 +67,9 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveS
   if (st.seedsSub === 'rings') seedsSub = 'rings';
   findDim = st.findDim === -1 ? -1 : 0; placed = placedStore[findDim] || [];
   document.querySelectorAll('#fdimseg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.fdim === findDim));
-  $('landL').hidden = findDim !== 0;
   if (['origin', 'spawn', 'custom'].includes(st.start)) $('start').value = st.start;
   if (st.cx !== undefined) $('cx').value = st.cx;
   if (st.cz !== undefined) $('cz').value = st.cz;
-  if (typeof st.land === 'boolean') $('land').checked = st.land;
   $('start').onchange();
   if (st.xview && isFinite(st.xview.s) && st.xview.s > 0) xRestore = st.xview;
   if (st.pin && isFinite(st.pin.x)) { pin = st.pin; renderPin(); }
@@ -113,7 +110,16 @@ try {
   if (typeof DecompressionStream === 'undefined') throw new Error('no DecompressionStream');
   const zipped = Uint8Array.from(atob(WASM_B64), c => c.charCodeAt(0));
   new Response(new Blob([zipped]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
-    .then(buf => { wasmCopy = buf.slice(0); worker.postMessage({ type: 'init', wasm: buf }, [buf]); })
+    .then(buf => {
+      wasmCopy = buf.slice(0);
+      // the maps get their own engine: drawing a map never pauses a running search, and the other way round
+      try {
+        mapWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        mapWorker.onmessage = ev => { const m = ev.data; if (m.type === 'ready') mapReady = true; else if (m.type === 'area') onMsg(m); else if (m.type === 'error') console.error(m.message); };
+        const mb = buf.slice(0); mapWorker.postMessage({ type: 'init', wasm: mb }, [mb]);
+      } catch (err) { console.error(err); mapWorker = null; }
+      worker.postMessage({ type: 'init', wasm: buf }, [buf]);
+    })
     .catch(err => { console.error(err); $('stext').textContent = 'This browser could not unpack the search engine. Use a recent Chrome, Edge or Firefox.'; });
 } catch (err) { console.error(err); $('stext').textContent = 'This browser blocked the search engine. Try another browser.'; }
 setSeedsSub(seedsSub);   // Find seeds: the last kind of search used

@@ -1,7 +1,17 @@
 const WASM_B64 = "__WASM_B64__";
 const $ = id => document.getElementById(id);
 // interface size (--ui in style.css): the page is zoomed, so things drawn on the maps are scaled to match
-const uiZoom = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
+// CSS values are read many times per map frame: keep them until the next frame (theme or size may change after)
+const CSS_CACHE = new Map();
+const cssRaw = v => {
+  let r = CSS_CACHE.get(v);
+  if (r === undefined) {
+    if (!CSS_CACHE.size) requestAnimationFrame(() => CSS_CACHE.clear());
+    r = getComputedStyle(document.documentElement).getPropertyValue(v); CSS_CACHE.set(v, r);
+  }
+  return r;
+};
+const uiZoom = () => parseFloat(cssRaw('--ui')) || 1;
 const drawScale = () => (devicePixelRatio || 1) * uiZoom();
 let RADII = [250, 500, 750];   // ring radius in blocks; the page shows diameters
 const ZCOL = ['--z1', '--z2', '--z3'];
@@ -72,10 +82,14 @@ const findBiomes = () => findDim === -1 ? NETHER_BIOMES : BIOMES;
 // Example layout so the page opens working; the user's own drags replace it.
 let placed = [];
 let tab = 'structure', armed = null;   // armed: item picked by tap, waiting for a zone
-let colors = null, names = null, worker = null, running = false, job = null;
+let colors = null, names = null, worker = null, mapWorker = null, mapReady = false, running = false, job = null;
 let exact = [], close = [], sel = null, tilesDone = 0, shown = { exact: 6, close: 6 };
 
-const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const css = v => cssRaw(v).trim();
+// set text / HTML only when it changed: maps redraw often and every DOM write is translated again
+// (an element written this way must always be written this way, or the remembered value goes stale)
+const setText = (el, s) => { if (el._w !== 't' + s) { el._w = 't' + s; el.textContent = s; } };
+const setHTML = (el, s) => { if (el._w !== 'h' + s) { el._w = 'h' + s; el.innerHTML = s; } };
 const fmt = n => Math.round(n).toLocaleString('en-US');
 const rgb = id => colors ? `rgb(${colors[id*3]},${colors[id*3+1]},${colors[id*3+2]})` : '#777';
 

@@ -71,10 +71,10 @@ On construit ce qu'on veut autour de la base avec **3 cercles** de 500, 1000 et 
 
 Desert wells, geodes et fossiles sont les endroits où le jeu *essaie* de les placer : une grotte, de l'eau ou le mauvais sol peut encore les empêcher. Les coordonnées du buried treasure sont exactes (le coffre).
 
-### Dimension, Start from, Base on land
+### Dimension, Start from
 - **Overworld / Nether** : chaque dimension garde ses propres cercles.
 - **Start from** : `0, 0`, le **spawn du monde**, ou **Custom X / Z**. La recherche part de ce point en spirale. Les résultats sont triés du plus proche au plus loin de ce point. Avec des coordonnées perso, un **point rouge « Start »** les montre sur la carte.
-- **Base on land** (Overworld) : la base doit être sur la terre ferme.
+- En Overworld, la base est toujours sur la terre ferme (jamais dans l'eau).
 
 ### Biome size
 Les biomes de grottes (Dripstone caves, Lush caves, Deep dark, Sulfur caves) sont cherchés sous terre, à 4 profondeurs (y 16, −8, −32, −56) ; la carte montre toujours la surface.
@@ -101,7 +101,7 @@ En haut à gauche, **Look in** : **This seed** (la recherche normale dans le see
 - Chaque seed trouvé : **Copy** (copie le seed), **☆ / ★** (le garde dans la liste **Starred**), **Use** (le met dans la case Java seed). Un clic montre la carte de ce seed.
 - **200 seeds** au maximum par liste ; **Search** recommence une nouvelle liste (les seeds étoilés restent).
 - Les résultats de This seed sont gardés quand on passe d'un mode à l'autre.
-- **Fixed spots** : en mode Find seeds, il n'y a plus de cercles (ni Start from, ni Base on land) : on glisse une structure dans la case Fixed spots (ou on la touche puis on touche la case), on tape son **X** et son **Z**, on choisit **within** 16, 50, 100 ou 250 blocs et, si on veut, les **biomes** où elle peut être : on glisse des biomes de l'onglet Biomes dans sa case « in » (ou on touche le biome puis la structure) ; elle doit être dans l'un d'eux, un clic sur un biome de la case l'enlève (case vide = « any biome » ; les biomes de grottes sont cherchés sous la structure, aux 4 profondeurs). Seuls les seeds qui ont toutes ces structures à ces endroits sont gardés. Sur la carte, chaque endroit fixé est un cercle rouge en pointillés ; sur les cartes des seeds, chaque structure fixée montre son biome. Les cercles restent pour This seed.
+- **Fixed spots** : en mode Find seeds, il n'y a plus de cercles (ni Start from) : on glisse une structure dans la case Fixed spots (ou on la touche puis on touche la case), on tape son **X** et son **Z**, on choisit **within** 16, 50, 100 ou 250 blocs et, si on veut, les **biomes** où elle peut être : on glisse des biomes de l'onglet Biomes dans sa case « in » (ou on touche le biome puis la structure) ; elle doit être dans l'un d'eux, un clic sur un biome de la case l'enlève (case vide = « any biome » ; les biomes de grottes sont cherchés sous la structure, aux 4 profondeurs). Seuls les seeds qui ont toutes ces structures à ces endroits sont gardés. Sur la carte, chaque endroit fixé est un cercle rouge en pointillés ; sur les cartes des seeds, chaque structure fixée montre son biome. Les cercles restent pour This seed.
 - Comment c'est rapide (l'idée de SeedCrackerX) : l'endroit où une structure peut apparaître ne dépend que des **48 bits du bas** du seed (le « structure seed »). Le site teste d'abord des millions de structure seeds avec le seul calcul de placement, puis, pour ceux qui collent, essaie quelques valeurs des **16 bits du haut** (ils décident des biomes, donc si la structure apparaît vraiment). « Seeds tested » compte alors les structure seeds ; chacun vaut 65 536 seeds.
 - **Biome spots** : un biome lâché dans la case (pas sur une structure) devient « ce biome est ici » avec son X / Z. Il compte pour Find seeds et pour Crack.
 - **within « same chunk »** : la structure doit commencer dans le chunk tapé (pour Crack).
@@ -125,6 +125,7 @@ Respecte les règles du serveur : certains interdisent de cracker le seed.
 - **Show on map** : les structures à afficher, avec les petites sous « Smaller structures » (cachées au départ). Overworld, Nether (forteresse, 4 types de bastions avec un anneau de couleur, ruined portal) et End (end ship avec élytres, cités sans bateau, les 20 portails de l'île principale et où ils mènent, portails des îles extérieures).
 - Les structures s'affichent à moins de ~20 000 blocs de large. Il faut zoomer plus pour les plus nombreuses : geodes (3 000), fossiles et mineshafts (6 000), buried treasure (8 000). Quand la carte est chargée, les petites structures sont dessinées en petit, sous les principales.
 - En haut du panneau : **Go to** et **Picked point** (coordonnées, notes selon la structure : type de bastion, profondeur d'un fossile, etc.), **Find a base here**. Bouton **XZ** sur la carte.
+- **Itinéraire** : le petit carré sous **XZ** active le mode itinéraire. Chaque clic sur une structure (ou n'importe où) ajoute une étape, un clic sur une étape la retire. Les étapes sont reliées par une ligne jaune, numérotées, avec la longueur de chaque trajet. À gauche, la section **Route** donne les coordonnées de chaque étape, la distance depuis la précédente et le total ; **Best order** garde la première étape et trouve le chemin le plus court par les autres, **Copy** copie la liste, **Clear** l'efface, un clic sur une étape centre la carte dessus. Un itinéraire par dimension, gardé par seed dans le navigateur. Le même bouton existe sur la carte de **Find a base** (la liste s'affiche alors sur la carte, en haut à gauche ; un itinéraire par seed et dimension).
 - En bas de la carte, deux barres toujours visibles : `Picked X, Z : -520, 936 | -65, 117` et `Cursor …`. Coordonnées de l'Overworld en blanc, du Nether en rouge.
 
 ---
@@ -140,7 +141,11 @@ En 26.1 et plus, les offres des villageois viennent de suites fixes, déterminé
 - **Your librarian / Your villager** : ce qu'il devrait montrer maintenant et au prochain reroll. Boutons **I rerolled, that's what came out** (+1), **Something else came out** (retrouver la position), **Undo**.
 - **Wanted books** (bibliothécaire) : Mending par défaut. On ajoute d'autres livres avec un niveau minimum et un prix maximum. Une carte par livre : dans combien de rerolls, roll, prix, slot, et le moins cher des 300 prochains.
 - **Tableau** des rolls à venir : pour le bibliothécaire, livre, prix et autre offre, livres voulus en surbrillance, filtres *Books only* / *Wanted books only* / *Books on the left* ; pour les autres métiers, les 2 offres (ce qu'on donne → ce qu'on reçoit), avec les enchantements, couleurs du cuir, effets des flèches et des ragoûts.
-- **Next level-ups** (à droite) : Apprenti, Compagnon, Expert, Maître. Le prochain villageois de ce métier qui atteint ce niveau, n'importe où dans le monde, reçoit la ligne suivante. **One leveled up** avance d'une ligne ; **Find it from trades I see** retrouve la position avec les offres reçues. Les offres d'un villageois ne sont choisies qu'au moment où il prend le niveau, pas quand on le bloque.
+- **Next level-ups** (à droite) : Apprenti, Compagnon, Expert, Maître. Tous les villageois d'un métier partagent une liste par niveau : chacun qui atteint le niveau, n'importe où dans le monde, prend la ligne suivante. Les offres d'un villageois ne sont choisies qu'au moment où il prend le niveau, pas quand on le bloque.
+  - En haut, une grande carte : **ce que recevra le prochain villageois** qui atteint ce niveau (les 2 offres en grand, en vert si un livre voulu est dedans), avec **A villager reached this level** (+1), **Undo** et **I don't know where I am** (retrouver la position avec les offres reçues). Dessous : ce que le dernier a reçu, et l'astuce : si la ligne ne plaît pas, faire monter d'abord un villageois dont on n'a pas besoin.
+  - **Level-ups already done in this world** : le nombre de montées déjà faites à ce niveau (la position).
+  - **Wanted books** (bibliothécaire) : « Mending 24 dans 105 montées · 104 autres à faire monter avant ».
+  - Le tableau : colonne **Order** (Next, 2nd, 3rd…, dans la langue du site), puis les offres.
 - « Rerolls » compte le prochain reroll comme 1. Un roll = casser et reposer le bloc de métier, puis ouvrir le menu.
 - Ne pas commercer avant d'avoir la bonne offre : après un échange, les offres sont figées. Sur un serveur, les autres joueurs font avancer les mêmes suites. Le prix en jeu peut varier (réductions, demande). Expérience *Trade Rebalance* désactivée, pas Bedrock.
 
@@ -154,7 +159,7 @@ Les icônes de structures sont les **vraies textures d'objets Minecraft** (cloch
 
 ## Ce qui est gardé quand on rafraîchit
 
-Dans le navigateur : le mode (This seed / Find seeds) avec les seeds trouvés et étoilés, le seed, la version, l'onglet, les cercles (Overworld et Nether) et leurs tailles, Start from avec X / Z, Base on land, les résultats et celui choisi (une recherche en cours revient en pause ; **Search further** la continue), la Seed map (endroit, zoom, dimension, point choisi, structures affichées, XZ), et pour Villager le métier, le type de villageois, le niveau affiché à droite, les positions par seed (rerolls et montées de niveau, pour chaque métier), les livres voulus, la langue et les filtres. Au rechargement, aucune recherche ne repart toute seule.
+Dans le navigateur : le mode (This seed / Find seeds) avec les seeds trouvés et étoilés, le seed, la version, l'onglet, les cercles (Overworld et Nether) et leurs tailles, Start from avec X / Z, les résultats et celui choisi (une recherche en cours revient en pause ; **Search further** la continue), la Seed map (endroit, zoom, dimension, point choisi, structures affichées, XZ), et pour Villager le métier, le type de villageois, le niveau affiché à droite, les positions par seed (rerolls et montées de niveau, pour chaque métier), les livres voulus, la langue et les filtres. Au rechargement, aucune recherche ne repart toute seule.
 
 ---
 
@@ -219,6 +224,7 @@ Pour une modification, il suffit d'ouvrir le fichier concerné (pas tout le site
 | `js/04-maps.js` | Le moteur de carte commun (`MapView` : couches, zoom, déplacement) et le dessin des icônes. |
 | `js/05-findmap.js` | La carte à côté des résultats (cercles, cadres de couleur, point rouge Start). |
 | `js/06-seedmap.js` | L'onglet Seed map (affichage, Picked point, Go to, dimensions). |
+| `js/06b-route.js` | L'itinéraire des deux cartes (`makeRoute` : étapes, ligne, distances, Best order). |
 | `js/07-tabs.js` | Onglets et changements de seed. |
 | `js/08-saved-seeds.js` | Saved seeds et `seeds.txt` (lecture, écriture, format). |
 | `js/09-librarian.js` | Onglet Villager, bibliothécaire novice (générateur Xoroshiro, livres, recherche de position). |
@@ -316,3 +322,7 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v53 | L'onglet « Librarian » s'appelle maintenant « Villager » (Villageois en français) |
 | v54 | Tout l'onglet Villager suit le métier choisi (en haut à gauche) : à gauche et dans le grand tableau, les rerolls du niveau Novice de ce métier (« I rerolled », « Find my position ») ; à droite, ses niveaux Apprenti à Maître |
 | v55 | README à jour (onglet Villager, ce qui est gardé, fichiers), exemple de `seeds.txt` sans vrai seed ; `.gitignore` complété (fichiers de langue, `__pycache__`, fichiers système) et `.gitattributes` (fins de ligne LF) |
+| v56 | Villager, « Next level-ups » plus clair : grande carte « ce que recevra le prochain villageois » avec ses boutons (+1, Undo, I don't know where I am) et ce qu'a reçu le dernier, astuce pour passer une ligne, « Level-ups already done in this world », livres voulus « dans N montées · N−1 autres avant », colonne Order (Next, 2nd, 3rd…) au lieu de # / In |
+| v57 | Seed map et carte de Find a base : itinéraire (carré sous XZ) : clic sur des structures pour les relier, numéros, longueur de chaque trajet, liste des coordonnées, total, Best order (chemin le plus court), Copy, Clear (`js/06b-route.js`) |
+| v58 | Case « Base on land » enlevée : en Overworld la base est toujours sur la terre ferme |
+| v59 | Optimisation : les cartes ont leur propre moteur (une carte ne met plus la recherche en pause, recherche 30 à 50 % plus rapide), biomes calculés seulement aux endroits candidats quand on ne cherche que des structures, carte redessinée une fois par image, textes et traductions plus réécrits s'ils n'ont pas changé, traductions gardées en mémoire, fond des icônes dessiné une seule fois par taille |

@@ -35,7 +35,7 @@ function renderFindPickBar() {
   const bar = $('hud');
   if (!sel || !findMap.layers.length) { bar.hidden = true; return; }
   const q = fPick || { x: sel.x, z: sel.z, label: 'Base spot' };
-  bar.innerHTML = coordsHTML(q.x, q.z, (job && job.dim) || 0, q.label, 'Picked');
+  setHTML(bar, coordsHTML(q.x, q.z, (job && job.dim) || 0, q.label, 'Picked'));
   bar.hidden = false;
 }
 const findMap = MapView({
@@ -49,7 +49,7 @@ const findMap = MapView({
     const { ctx, cv } = M, d = drawScale(), v = M.view;
     if (!M.layers.length || !sel) { $('mtitle').hidden = true; $('hud').hidden = true; $('fhov').hidden = true; return; }
     $('mempty').hidden = true; $('mtitle').hidden = false; $('fhov').hidden = !$('fhov').textContent;
-    $('mtitle').textContent = `X ${sel.x} · Z ${sel.z}`;
+    setText($('mtitle'), `X ${sel.x} · Z ${sel.z}`);
     renderFindPickBar();
     const [bx, by] = M.scr(sel.x, sel.z), rings = job.items.length > 0;
     if (rings) {
@@ -114,10 +114,11 @@ const findMap = MapView({
     if ((was && was.x) !== (s && s.x) || (was && was.z) !== (s && s.z)) M.draw();
     $('map').style.cursor = s ? 'pointer' : '';
     $('fhov').hidden = false;
-    $('fhov').innerHTML = s ? coordsHTML(s.x, s.z, (job && job.dim) || 0, s.name, 'Cursor', true)
-      : coordsHTML(x, z, (job && job.dim) || 0, b, 'Cursor', true);
+    setHTML($('fhov'), s ? coordsHTML(s.x, s.z, (job && job.dim) || 0, s.name, 'Cursor', true)
+      : coordsHTML(x, z, (job && job.dim) || 0, b, 'Cursor', true));
   },
   click: (M, x, z, sx, sy) => {
+    if (findRoute && findRoute.on) { findRoute.click(M, x, z, sx, sy); return; }   // route mode (js/06b-route.js)
     // a click on a result dot opens that spot; on a structure or anywhere else, picks it
     const d = drawScale(); let best = null, bd = 10 * d;
     if (findMode === 'seed') for (const s2 of exact.concat(close)) { const [px, py] = M.scr(s2.x, s2.z), dd = Math.hypot(px - sx, py - sy); if (dd < bd && s2 !== sel) { bd = dd; best = s2; } }
@@ -127,7 +128,7 @@ const findMap = MapView({
     M.draw();
   },
 });
-$('map').addEventListener('pointerleave', () => { $('fhov').hidden = true; $('fhov').textContent = ''; if (fHover) { fHover = null; findMap.draw(); } });
+$('map').addEventListener('pointerleave', () => { $('fhov').hidden = true; setText($('fhov'), ''); if (fHover) { fHover = null; findMap.draw(); } });
 $('fxz').setAttribute('aria-pressed', fCoords);
 $('fxz').onclick = () => { fCoords = !fCoords; $('fxz').setAttribute('aria-pressed', fCoords); try { localStorage.setItem('basescout.fxz', fCoords ? '1' : '0'); } catch {} findMap.draw(); };
 $('fzin').onclick = () => findMap.zoomAt(findMap.cv.width / 2, findMap.cv.height / 2, 1.6);

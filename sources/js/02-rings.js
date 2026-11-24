@@ -137,7 +137,6 @@ function setFindDim(d) {
   placedStore[findDim] = placed; findDim = d; placed = placedStore[d] || [];
   armed = null; tab = 'structure';
   document.querySelectorAll('#fdimseg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.fdim === d));
-  $('landL').hidden = d !== 0;
   if (running) stopSearch();
   token++;   // ignore anything still on its way from the old search
   job = null; exact = []; close = []; sel = null; findMap.reset(); findMap.draw();
