@@ -1,4 +1,5 @@
 // ---------- structure plan: double-click a structure on the Seed map (or "Chests" in the picked point) ----------
+// Desert pyramid, buried treasure, pillager outpost, bastion (start part), end city, stronghold and mineshaft.
 // Shows the structure from above, where its chests are, and what is in each chest, laid out like the game's chest.
 const LOOT_FROM = '1.21.6';   // chest contents are worked out from this version
 const texUrl = (path, k = 0) => `${TEX_SOURCES[k]}${path}.png`;
@@ -30,34 +31,119 @@ function planHTML(S) {
   const chests = S.chests.map((c, k) => `<button type="button" class="pchest${k === planSel ? ' on' : ''}" data-chest="${k}" style="grid-column:${c.x - S.minX + 1};grid-row:${c.z - S.minZ + 1}" title="Chest ${k + 1}: X ${c.x}, Z ${c.z}">${k + 1}</button>`).join('');
   return `<div class="pgridwrap"><span class="pnorth">N</span><div class="pgrid">${cells.join('')}</div><div class="pgrid pchests">${chests}</div></div>`;   // chests on their own layer, so blocks don't shift
 }
+// the other structures: their pieces from above with the game's textures (north up, 1 block = 1 texture tile).
+// The view can be zoomed (wheel, + / −) and moved (drag); chests stay the same size.
+// a piece's look: [name, textures (top layer first), darken 0..1]
+const LOOK = {
+  stronghold: p => [
+    ['Corridor', ['block/stone_bricks']], ['Prison cells', ['block/iron_bars', 'block/stone_bricks']], ['Turn', ['block/stone_bricks']], ['Turn', ['block/stone_bricks']],
+    ['Room', ['block/mossy_stone_bricks']], ['Stairs', ['block/stone_bricks'], .3], ['Stairs', ['block/stone_bricks'], .3], ['Crossing', ['block/mossy_stone_bricks']],
+    ['Chest corridor', ['block/cracked_stone_bricks']], ['Library', ['block/bookshelf']], ['End portal room', ['block/end_portal_frame_top']], ['Corridor', ['block/stone_bricks'], .15]][p.t],
+  mineshaft: p => p.t === 0 ? ['Dirt room (start)', ['block/dirt']] : p.t === 2 ? ['Crossing', ['block/oak_log_top']] : p.t === 3 ? ['Stairs', ['block/oak_planks'], .3]
+    : p.add & 2 ? ['Corridor with a spider spawner', ['block/cobweb', 'block/oak_planks']] : p.add & 1 ? ['Corridor with rails', ['block/rail', 'block/oak_planks']] : ['Corridor', ['block/oak_planks']],
+  endcity: p => p.t === 12 ? ['End ship', ['block/purpur_block'], .35] : [2, 3, 4, 5].includes(p.t) ? ['Bridge', ['block/end_stone_bricks']]
+    : p.t === 8 ? ['Tower top (2 chests)', ['block/purpur_pillar_top']] : [0, 1, 9, 10, 11, 13, 14, 15].includes(p.t) ? ['House', ['block/purpur_block'], .12] : ['Tower', ['block/purpur_block']],
+  bastion: () => ['Start of the bastion', ['block/polished_blackstone_bricks']],
+  outpost: () => ['Watchtower', ['block/dark_oak_planks']],
+  treasure: () => ['Beach sand', ['block/sand']],
+};
+const planKind = key => key.startsWith('bas_') ? 'bastion' : key === 'endship' ? 'endcity' : key;
+const texLayers = (tex, dark) => (dark ? [`linear-gradient(rgba(0,0,0,${dark}),rgba(0,0,0,${dark}))`] : []).concat(tex.map(t => `url('${texUrl(t)}'),url('${texUrl(t, 1)}')`)).join(',');
+let pv = null;   // the plan view: { x0, z0, W, H, k, ox, oy }
+function schemHTML(S) {
+  const look = LOOK[planKind(S.key)], pieces = S.key === 'treasure' ? [{ t: 0, b0: [S.x - 4, 0, S.z - 4], b1: [S.x + 4, 0, S.z + 4] }] : S.pieces;
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const p of pieces.concat(S.chests.map(c => ({ b0: [c.x, 0, c.z], b1: [c.x, 0, c.z] })))) { x0 = Math.min(x0, p.b0[0]); z0 = Math.min(z0, p.b0[2]); x1 = Math.max(x1, p.b1[0]); z1 = Math.max(z1, p.b1[2]); }
+  x0 -= 4; z0 -= 4; x1 += 4; z1 += 4;
+  pv = { x0, z0, W: x1 - x0 + 1, H: z1 - z0 + 1 };
+  const order = pieces.map((p, i) => i).sort((a, b) => (pieces[a].b0[1] - pieces[b].b0[1]) || a - b);   // lower pieces first, so towers sit on top
+  const kinds = new Map();
+  const blocks = order.map(i => {
+    const p = pieces[i], [name, tex, dark] = look(p); kinds.set(name, [tex, dark]);
+    const big = ['Library', 'End portal room', 'End ship', 'Dirt room (start)', 'Start of the bastion', 'Watchtower'].includes(name);
+    return `<i class="ppc" style="--x:${p.b0[0] - x0};--z:${p.b0[2] - z0};--w:${p.b1[0] - p.b0[0] + 1};--h:${p.b1[2] - p.b0[2] + 1};background-image:${texLayers(tex, dark)}" title="${escH(name)}">${big ? `<b>${escH(name)}</b>` : ''}</i>`;
+  }).join('');
+  const chests = S.chests.map((c, j) => `<button type="button" class="pchest${c.cart ? ' cart' : ''}${j === planSel ? ' on' : ''}" data-chest="${j}" style="--x:${c.x - x0 + .5};--z:${c.z - z0 + .5}" title="${escH(chestName(S, j))} ${j + 1}">${j + 1}</button>`).join('');
+  const legend = [...kinds].map(([name, [tex, dark]]) => `<span><i style="background-image:${texLayers(tex, dark)}"></i>${escH(name)}</span>`).join('');
+  return `<div class="pview" id="pview"><span class="pnorth">N ↑</span><div class="pworld" id="pworld">${blocks}${chests}</div>
+    <div class="pzoom"><button type="button" id="pzIn" title="Zoom in">+</button><button type="button" id="pzOut" title="Zoom out">−</button><button type="button" id="pzFit" title="See it all">⤢</button></div></div>
+    <div class="plegend">${legend}</div>`;
+}
+function pvApply() {
+  const w = $('pworld'); if (!w || !pv) return;
+  w.style.setProperty('--k', pv.k); w.style.transform = `translate(${pv.ox}px,${pv.oy}px)`;
+  w.classList.toggle('near', pv.k >= 5);
+}
+function pvFit(focus) {
+  const v = $('pview'); if (!v || !pv) return;
+  const vw = v.clientWidth, vh = v.clientHeight;
+  pv.k = Math.min(vw / pv.W, vh / pv.H, 16);
+  pv.ox = (vw - pv.W * pv.k) / 2; pv.oy = (vh - pv.H * pv.k) / 2;
+  if (focus) pvZoom(Math.min(16, Math.max(pv.k, 6)) / pv.k, ...focus);
+  pvApply();
+}
+function pvZoom(f, cx, cy) {   // zoom by f around the view point cx, cy
+  const k = Math.min(24, Math.max(pv.k0 || 0.3, pv.k * f)); f = k / pv.k;
+  pv.ox = cx - (cx - pv.ox) * f; pv.oy = cy - (cy - pv.oy) * f; pv.k = k; pvApply();
+}
+function pvWire() {
+  const v = $('pview'); if (!v) return;
+  pvFit(); pv.k0 = pv.k * 0.8;
+  const mid = () => [v.clientWidth / 2, v.clientHeight / 2];
+  $('pzIn').onclick = () => pvZoom(1.6, ...mid()); $('pzOut').onclick = () => pvZoom(1 / 1.6, ...mid()); $('pzFit').onclick = () => pvFit();
+  v.addEventListener('wheel', e => { e.preventDefault(); const r = v.getBoundingClientRect(); pvZoom(Math.exp(-e.deltaY * 0.002), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  let drag = null;
+  v.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; drag = [e.clientX, e.clientY]; v.setPointerCapture(e.pointerId); v.classList.add('grab'); });
+  v.addEventListener('pointermove', e => { if (!drag) return; pv.ox += e.clientX - drag[0]; pv.oy += e.clientY - drag[1]; drag = [e.clientX, e.clientY]; pvApply(); });
+  const up = () => { drag = null; v.classList.remove('grab'); };
+  v.addEventListener('pointerup', up); v.addEventListener('pointercancel', up);
+}
+const chestName = (S, j) => S.chests[j].ship ? 'Ship chest' : S.chests[j].cart ? 'Minecart' : 'Chest';
+const PLAN_INFO = {
+  pyramid: ['Desert pyramid', "The 4 chests are in a hidden room about 12 blocks under the blue block in the middle of the floor. A pressure plate in that room sets off 9 TNT: don't step on it."],
+  treasure: ['Buried treasure', 'One chest, buried at exactly these X and Z, usually a few blocks under the sand or gravel of a beach or the sea floor.'],
+  outpost: ['Pillager outpost', 'The chest is on the top floor of the watchtower. Pillagers keep spawning around it.'],
+  bastion: ['Bastion remnant', 'Only the chests of the part the bastion starts from are shown here. The other rooms and the treasure room chest are not worked out yet.'],
+  endcity: ['End city', 'Tall towers have 2 chests at the top, some houses have 1, and the ship has 2 (and the elytra). The plan is flat: chests can be high up.'],
+  stronghold: ['Stronghold', 'Chests are in chest corridors, store rooms and libraries (2 in a tall library). Where a cave cuts through, a chest can be missing or hold something else.'],
+  mineshaft: ['Mineshaft', 'Chests are in minecarts along the corridors. Parts in the air, in water or cut by caves are not built, which can change or remove chests.'],
+};
+const LOOT_BEST = /^(diamond|emerald|golden_apple|enchanted_golden_apple|diamond_horse_armor|diamond_nautilus_armor|heart_of_the_sea|ancient_debris|netherite_scrap|gold_block|name_tag|lodestone|music_disc_.*|.*_smithing_template)$/;   // shown in the Best line
 function slotHTML(s) {
   if (!s) return '<i class="slot"></i>';
   const it = LOOT_ITEMS[s.i], ench = s.ench.length, name = it[0] === 'book' && ench ? 'Enchanted Book' : it[1];
   const tip = name + (ench ? ': ' + s.ench.map(([e, l]) => LOOT_ENCH[e][1] + (LOOT_ENCH[e][2] > 1 ? ' ' + ROMAN[l] : '')).join(', ') : '');
+  const tip2 = s.note ? tip + ' (' + s.note + ')' : tip;
   const tex = it[0] === 'book' && ench ? 'item/enchanted_book' : it[2];
-  return `<i class="slot${ench || it[0] === 'enchanted_golden_apple' ? ' glint' : ''}" title="${escH(tip)}"><img src="${texUrl(tex)}" alt="${escH(name)}" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${texUrl(tex, 1)}'}">${s.n > 1 ? `<b>${s.n}</b>` : ''}</i>`;
+  return `<i class="slot${ench || it[0] === 'enchanted_golden_apple' ? ' glint' : ''}" title="${escH(tip2)}"><img src="${texUrl(tex)}" alt="${escH(name)}" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${texUrl(tex, 1)}'}">${s.n > 1 ? `<b>${s.n}</b>` : ''}</i>`;
 }
 function chestHTML(S, k) {
   const c = S.chests[k];
   if (!c.items) return `<p class="hint"><span>Chest contents are worked out from Java</span> ${LOOT_FROM}. <span>Pick a newer version at the top to see them.</span></p>`;
-  const best = c.items.filter(s => s.ench.length || ['diamond', 'enchanted_golden_apple', 'golden_apple', 'emerald', 'diamond_horse_armor', 'dune_armor_trim_smithing_template'].includes(LOOT_ITEMS[s.i][0]));
+  const best = c.items.filter(s => s.ench.length || LOOT_BEST.test(LOOT_ITEMS[s.i][0]));
   const sp = t => `<span>${escH(t)}</span>`;   // one text per span, so each part gets translated
   const bestTxt = best.map(s => { const it = LOOT_ITEMS[s.i]; return (s.n > 1 ? s.n + ' ' : '') + sp(it[0] === 'book' && s.ench.length ? 'Enchanted Book' : it[1]) + (s.ench.length ? ' (' + s.ench.map(([e, l]) => sp(LOOT_ENCH[e][1] + (LOOT_ENCH[e][2] > 1 ? ' ' + ROMAN[l] : ''))).join(', ') + ')' : ''); });
-  return `<div class="mcchest"><div class="mct"><span>Chest</span> ${k + 1}<span class="mcxz">X ${c.x} · Z ${c.z}</span></div><div class="slots">${c.items.slots.map(slotHTML).join('')}</div></div>
+  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}<span class="mcxz">X ${c.x} · Z ${c.z}</span></div><div class="slots">${c.items.slots.map(slotHTML).join('')}</div></div>
     ${bestTxt.length ? `<div class="pbest"><b>Best:</b> ${bestTxt.join(', ')}</div>` : ''}`;
 }
 function renderPlan() {
   const S = planCur; if (!S) return;
-  $('planTitle').innerHTML = `<span>Desert pyramid</span> <span class="sub">X ${S.x} · Z ${S.z}</span>`;
-  $('planMap').innerHTML = planHTML(S) + `<p class="hint">The 4 chests are in a hidden room about 12 blocks under the blue block in the middle of the floor. A pressure plate in that room sets off 9 TNT: don't step on it.</p>`;
-  $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}"><span>Chest</span> ${k + 1}</button>`).join('')}</div>${chestHTML(S, planSel)}
-    <p class="hint">Contents are fixed by the seed when the pyramid is built. Already opened chests, or chests changed by another player, won't match.</p>`;
+  const [title, note] = PLAN_INFO[planKind(S.key)];
+  $('planTitle').innerHTML = `<span>${title}</span> <span class="sub">X ${S.x} · Z ${S.z}</span>`;
+  if (S.drawn !== true) {   // the map is built once per plan; picking a chest only moves the highlight
+    $('planMap').innerHTML = (S.key === 'pyramid' ? planHTML(S) : schemHTML(S)) + `<p class="hint">${note}</p>`;
+    S.drawn = true; if (S.key !== 'pyramid') requestAnimationFrame(pvWire);
+  } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
+  if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">No chest in this one.</p>`; return; }
+  planSel = Math.min(planSel, S.chests.length - 1);
+  $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}"><span>${chestName(S, k)}</span> ${k + 1}</button>`).join('')}</div>${chestHTML(S, planSel)}
+    <p class="hint">Contents are fixed by the seed when the structure is built. Already opened chests, or chests changed by another player, won't match.</p>`;
   document.querySelectorAll('#planDlg [data-chest]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest; renderPlan(); });
 }
-function openPlan(q) {
+function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;
   const seed = parseSeed($('seed').value); if (seed === null) { toast('Enter a seed first.'); return true; }
-  planCur = lootStructure(q.key, BigInt(seed), q.x, q.z, VER); planSel = 0;
+  planCur = lootStructure(q.key, BigInt(seed), q.x, q.z, VER, q.key === 'mineshaft' ? M.biomeAt(q.x, q.z) : ''); planSel = 0;
   if (!planCur) { toast('No plan for this structure in this version.'); return true; }
   $('planDlg').hidden = false; renderPlan(); $('planClose').focus();
   return true;
@@ -66,10 +152,14 @@ const closePlan = () => { $('planDlg').hidden = true; planCur = null; };
 $('planClose').onclick = closePlan;
 $('planDlg').addEventListener('click', e => { if (e.target === $('planDlg')) closePlan(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('planDlg').hidden) closePlan(); });
-// double-click a structure on the Seed map
-xMap.cv.addEventListener('dblclick', e => {   // same pointer maths as the map's own click (js/04-maps.js)
-  if (typeof seedRoute !== 'undefined' && seedRoute.on) return;   // in route mode, clicks add stops
-  const r = xMap.cv.getBoundingClientRect(), d = devicePixelRatio || 1;
-  const s = structAt(xMap, shownKeys, (e.clientX - r.left) * d, (e.clientY - r.top) * d, 18);
-  if (s && openPlan(s)) { e.preventDefault(); e.stopPropagation(); }
-}, true);
+// double-click a structure on the Seed map, or on the Spot finder map beside the results
+function planOnDblclick(M, keys, radius, routeOn) {
+  M.cv.addEventListener('dblclick', e => {   // same pointer maths as the map's own click (js/04-maps.js)
+    if (routeOn()) return;   // in route mode, clicks add stops
+    const r = M.cv.getBoundingClientRect(), d = devicePixelRatio || 1;
+    const s = structAt(M, keys(), (e.clientX - r.left) * d, (e.clientY - r.top) * d, radius);
+    if (s && openPlan(s, M)) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+}
+planOnDblclick(xMap, () => shownKeys, 18, () => typeof seedRoute !== 'undefined' && seedRoute.on);
+planOnDblclick(findMap, () => findMap.view.s >= 0.035 ? new Set(findAllKeys()) : new Set(), 16, () => typeof findRoute !== 'undefined' && findRoute && findRoute.on);

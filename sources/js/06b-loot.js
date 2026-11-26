@@ -6,17 +6,35 @@
 const M64 = (1n << 64n) - 1n, M48 = (1n << 48n) - 1n;
 const lmix = x => { x = ((x ^ (x >> 30n)) * 0xbf58476d1ce4e5b9n) & M64; x = ((x ^ (x >> 27n)) * 0x94d049bb133111ebn) & M64; return x ^ (x >> 31n); };
 const lrot = (x, r) => ((x << BigInt(r)) | (x >> BigInt(64 - r))) & M64;
-class LootXoro {   // the world generator's random numbers (Xoroshiro128++, used the way Java's WorldgenRandom does)
-  constructor(seed) { const l = (BigInt.asUintN(64, seed) ^ 0x6a09e667f3bcc909n) & M64; this.lo = lmix(l); this.hi = lmix((l + 0x9e3779b97f4a7c15n) & M64); }
-  raw() { const l = this.lo, h0 = this.hi, n = (lrot((l + h0) & M64, 17) + l) & M64, h = h0 ^ l; this.lo = lrot(l, 49) ^ h ^ ((h << 21n) & M64); this.hi = lrot(h, 28); return n; }
-  nextLongJ() { const a = BigInt.asIntN(32, this.raw() >> 32n), b = BigInt.asIntN(32, this.raw() >> 32n); return BigInt.asIntN(64, (a << 32n) + b); }
+class LootXoro {   // the world generator's random numbers (Xoroshiro128++, used the way Java's WorldgenRandom does), on 32-bit halves for speed
+  constructor(seed) {
+    const l = (BigInt.asUintN(64, seed) ^ 0x6a09e667f3bcc909n) & M64, lo = lmix(l), hi = lmix((l + 0x9e3779b97f4a7c15n) & M64);
+    this.a = Number(lo >> 32n) >>> 0; this.b = Number(lo & 0xffffffffn) >>> 0; this.c = Number(hi >> 32n) >>> 0; this.d = Number(hi & 0xffffffffn) >>> 0;
+  }
+  step() {   // advance; returns the top 32 bits of the output (this.ol keeps the low 32 bits)
+    const a = this.a, b = this.b, c = this.c, d = this.d;
+    let sl = b + d, sh = (a + c + (sl > 0xffffffff ? 1 : 0)) >>> 0; sl >>>= 0;   // lo + hi
+    const rh = ((sh << 17) | (sl >>> 15)) >>> 0, rl = ((sl << 17) | (sh >>> 15)) >>> 0;   // rotl 17
+    let ol = rl + b; const oh = (rh + a + (ol > 0xffffffff ? 1 : 0)) >>> 0; this.ol = ol >>> 0;   // + lo
+    const hh = (c ^ a) >>> 0, hl = (d ^ b) >>> 0;   // h = hi ^ lo
+    const r49h = ((b << 17) | (a >>> 15)) >>> 0, r49l = ((a << 17) | (b >>> 15)) >>> 0;   // rotl(lo, 49)
+    const s21h = ((hh << 21) | (hl >>> 11)) >>> 0, s21l = (hl << 21) >>> 0;   // h << 21
+    this.a = (r49h ^ hh ^ s21h) >>> 0; this.b = (r49l ^ hl ^ s21l) >>> 0;
+    this.c = ((hh << 28) | (hl >>> 4)) >>> 0; this.d = ((hl << 28) | (hh >>> 4)) >>> 0;   // rotl(h, 28)
+    return oh;
+  }
+  raw() { const h = this.step(); return (BigInt(h) << 32n) | BigInt(this.ol); }
+  skip(n) { for (let i = 0; i < n; i++) this.step(); }
+  nextLongJ() { const a = this.step() | 0, b = this.step() | 0; return BigInt.asIntN(64, (BigInt(a) << 32n) + BigInt(b)); }
   nextIntJ(n) {
     const m = n - 1;
-    if ((m & n) === 0) return Number(BigInt.asIntN(64, (BigInt(n) * (this.raw() >> 33n)) & M64) >> 31n);
+    if ((m & n) === 0) return Number(BigInt.asIntN(64, (BigInt(n) * BigInt(this.step() >>> 1)) & M64) >> 31n);
     let bits, val;
-    do { bits = Number(this.raw() >> 33n); val = bits % n; } while (((bits - val + m) | 0) < 0);
+    do { bits = this.step() >>> 1; val = bits % n; } while (((bits - val + m) | 0) < 0);
     return val;
   }
+  nextFloat() { return (this.step() >>> 8) / 16777216; }
+  nextBoolean() { return this.step() >>> 31; }
 }
 class LootRand {   // Java's java.util.Random, used to roll a chest's loot
   constructor(seed) { this.s = (BigInt.asUintN(64, seed) ^ 0x5DEECE66Dn) & M48; }
@@ -29,6 +47,12 @@ class LootRand {   // Java's java.util.Random, used to roll a chest's loot
   }
   nextFloat() { return this.next(24) / 16777216; }
   nextLong() { return BigInt.asIntN(64, (BigInt(this.next(32)) << 32n) + BigInt(this.next(32))); }
+  nextDouble() { return (this.next(26) * 134217728 + this.next(27)) / 9007199254740992; }
+}
+// Java's Random seeded for a chunk (structure starts and their pieces)
+function chunkRand(ws, cx, cz) {
+  const r = new LootRand(BigInt(ws)), a = r.nextLong(), b = r.nextLong();
+  return new LootRand(BigInt.asIntN(64, ((a * BigInt(cx)) & M64) ^ ((b * BigInt(cz)) & M64) ^ BigInt.asUintN(64, BigInt(ws))));
 }
 // population seed of a chunk (1.18+), as the game makes it before placing structures and features
 function lootPopSeed(ws, x, z) {
@@ -72,7 +96,7 @@ function lootEnchant(r, key, cost) {
 function lootRoll(name, ver, seed) {
   const T = lootTableFor(name, ver); if (!T) return null;
   const r = new LootRand(BigInt(seed)), out = [];
-  for (const [[a, b], ents] of T) {
+  for (const [[a, b], ents, poolFns] of T) {
     const rolls = a === b ? a : r.nextInt(b - a + 1) + a, total = ents.reduce((s, e) => s + e[1], 0);
     for (let k = 0; k < rolls; k++) {
       if (total <= 0) continue;
@@ -80,10 +104,13 @@ function lootRoll(name, ver, seed) {
       if (ents.length > 1) { let w = r.nextInt(total); for (e of ents) { w -= e[1]; if (w < 0) break; } }
       if (e[0] < 0) continue;
       const it = { i: e[0], n: 1, ench: [] };
-      for (const f of e[2]) {
+      for (const f of poolFns ? e[2].concat(poolFns) : e[2]) {   // the item's own functions, then the pool's
         if (f[0] === 'c') it.n = f[1] === f[2] ? f[1] : r.nextInt(f[2] - f[1] + 1) + f[1];
         else if (f[0] === 'er') { const Lst = LOOT_LISTS[f[1]], k2 = Lst[r.nextInt(Lst.length)], max = LOOT_ENCH[k2][2]; it.ench = [[k2, max > 1 ? r.nextInt(max) + 1 : 1]]; }
         else if (f[0] === 'el') it.ench = lootEnchant(r, f[1], f[2] === f[3] ? f[2] : r.nextInt(f[3] - f[2] + 1) + f[2]);
+        else if (f[0] === 'f') r.nextFloat();   // wear: one random number
+        else if (f[0] === 'h') it.note = f[1][r.nextInt(f[1].length)];   // goat horn sound
+        else if (f[0] === 'p') it.note = f[1];   // potion
       }
       out.push(it);
     }
@@ -118,20 +145,17 @@ function lootFacing(ws, cx, cz) {
   const s = BigInt.asIntN(64, ((BigInt(cx) * a) & M64) ^ ((BigInt(cz) * b) & M64) ^ BigInt.asUintN(64, BigInt(ws)));
   return ['north', 'east', 'south', 'west'][new LootRand(s).nextInt(4)];
 }
-// a structure's plan: { key, x, z, facing, chests: [{ x, z, dy, table, seed, items }] }
-function lootStructure(key, ws, x, z, ver) {
-  const minX = x & ~15, minZ = z & ~15;
-  if (key === 'pyramid') {
-    const salt = lootSalt('pyramid', ver); if (!salt) return null;
-    const r = new LootXoro(BigInt.asUintN(64, lootPopSeed(BigInt(ws), minX, minZ) + BigInt(salt[2] + 10000 * salt[1])));
-    r.nextIntJ(3);   // how far below the lowest ground the pyramid sits (0 to 2 blocks)
-    // the game places them north, east, south, west of the middle, in the pyramid's own directions, 2 blocks out
-    const facing = lootFacing(ws, minX >> 4, minZ >> 4), table = 'chests/desert_pyramid';
-    const world = (lx, lz) => facing === 'north' ? [minX + lx, minZ + 20 - lz] : facing === 'south' ? [minX + lx, minZ + lz]
-      : facing === 'west' ? [minX + 20 - lz, minZ + lx] : [minX + lz, minZ + lx];
-    return { key, x: minX + 10, z: minZ + 10, minX, minZ, facing,
-      chests: [[0, -2], [2, 0], [0, 2], [-2, 0]].map(([dx, dz]) => { const seed = r.nextLongJ(), [wx, wz] = world(10 + dx, 10 + dz); return { x: wx, z: wz, table, seed, items: lootRoll(table, ver, seed) }; }) };
-  }
-  return null;
+// desert pyramid: 4 chests in the hidden room
+function lootPyramid(ws, x, z, ver) {
+  const minX = x & ~15, minZ = z & ~15, key = 'pyramid';
+  const salt = lootSalt('pyramid', ver); if (!salt) return null;
+  const r = new LootXoro(BigInt.asUintN(64, lootPopSeed(BigInt(ws), minX, minZ) + BigInt(salt[2] + 10000 * salt[1])));
+  r.nextIntJ(3);   // how far below the lowest ground the pyramid sits (0 to 2 blocks)
+  // the game places them north, east, south, west of the middle, in the pyramid's own directions, 2 blocks out
+  const facing = lootFacing(ws, minX >> 4, minZ >> 4), table = 'chests/desert_pyramid';
+  const world = (lx, lz) => facing === 'north' ? [minX + lx, minZ + 20 - lz] : facing === 'south' ? [minX + lx, minZ + lz]
+    : facing === 'west' ? [minX + 20 - lz, minZ + lx] : [minX + lz, minZ + lx];
+  return { key, x: minX + 10, z: minZ + 10, minX, minZ, facing,
+    chests: [[0, -2], [2, 0], [0, 2], [-2, 0]].map(([dx, dz]) => { const seed = r.nextLongJ(), [wx, wz] = world(10 + dx, 10 + dz); return { x: wx, z: wz, table, seed, items: lootRoll(table, ver, seed) }; }) };
 }
-const LOOT_KEYS = new Set(['pyramid']);
+const LOOT_KEYS = new Set();   // structures with a plan (js/06b-structs.js)
