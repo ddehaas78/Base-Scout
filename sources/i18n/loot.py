@@ -29,6 +29,19 @@ TABLES = {
     'chests/stronghold_corridor': [['1.21.6', 'stronghold_corridor.1_21_6.json'], ['1.21.9', 'stronghold_corridor.1_21_9.json'], ['1.21.11', None]],
     'chests/stronghold_library': [['1.21.6', 'stronghold_library.1_21_1.json'], ['1.21.11', None]],
     'chests/stronghold_crossing': [['1.21.11', None]],
+    'chests/jungle_temple': [['1.21.6', 'jungle_temple.1_21_6.json'], ['1.21.9', 'jungle_temple.1_21_9.json'], ['1.21.11', None]],
+    'chests/jungle_temple_dispenser': [['1.21.6', None]],
+    'chests/igloo_chest': [['1.21.6', None]],
+    'chests/shipwreck_supply': [['1.21.6', 'shipwreck_supply.1_20.json'], ['1.21.11', None]],
+    'chests/shipwreck_map': [['1.21.6', 'shipwreck_map.1_20.json'], ['1.21.11', None]],
+    'chests/shipwreck_treasure': [['1.21.6', 'shipwreck_treasure.1_20.json'], ['1.21.11', None]],
+    'chests/ruined_portal': [['1.21.11', None]],
+    'chests/nether_bridge': [['1.21.6', 'nether_bridge.1_20.json'], ['1.21.9', None]],
+    'chests/ancient_city': [['1.21.11', None]],
+    'chests/ancient_city_ice_box': [['1.21.6', None]],
+    'chests/abandoned_camp_common_chest': [['26.3', None]],
+    'chests/abandoned_camp_secret_chest': [['26.3', None]],
+    'barrels/abandoned_camp_barrel': [['26.3', None]],
 }
 keys = set()
 
@@ -46,7 +59,13 @@ SPECIAL_TEX = {'enchanted_golden_apple': 'item/golden_apple', 'copper_horse_armo
                'bone_block': 'block/bone_block_side', 'lodestone': 'block/lodestone_side', 'compass': 'item/compass_00', 'iron_chain': 'item/chain',
                # items newer than the 1.21.4 textures: the closest older picture (the name stays right)
                'iron_spear': 'item/iron_sword', 'diamond_spear': 'item/diamond_sword', 'copper_nautilus_armor': 'item/iron_horse_armor',
-               'iron_nautilus_armor': 'item/iron_horse_armor', 'golden_nautilus_armor': 'item/golden_horse_armor', 'diamond_nautilus_armor': 'item/diamond_horse_armor'}
+               'iron_nautilus_armor': 'item/iron_horse_armor', 'golden_nautilus_armor': 'item/golden_horse_armor', 'diamond_nautilus_armor': 'item/diamond_horse_armor',
+               'music_disc_flurry': 'item/music_disc_13', 'pumpkin': 'block/pumpkin_side', 'clock': 'item/clock_00', 'light_weighted_pressure_plate': 'block/gold_block',
+               'sculk_catalyst': 'block/sculk_catalyst_top', 'sculk_sensor': 'block/sculk_sensor_top', 'chiseled_soulshale': 'block/soul_soil',
+               'copper_axe': 'item/iron_axe', 'copper_boots': 'item/iron_boots', 'copper_chestplate': 'item/iron_chestplate', 'copper_leggings': 'item/iron_leggings',
+               'copper_spear': 'item/iron_sword', 'copper_sword': 'item/iron_sword', 'white_cushion': 'block/white_wool', 'straw_bed': 'block/hay_block_top'}
+for _m in ('buried_treasure', 'abandoned_camp', 'buried_ancient_city', 'buried_trial_chambers', 'buried_mineshaft', 'desert_pyramid', 'jungle_pyramid', 'warm_ocean_ruins', 'woodland_mansion'):
+    SPECIAL_TEX[_m + '_map'] = 'item/filled_map'
 def item(i):
     i = bare(i)
     if i not in IIDX:
@@ -73,7 +92,7 @@ def ench_list(spec, lunge):   # spec: '#tag', one enchantment id, or a list of i
         out.append([x[0] for x in ENCH].index(e))
     return out
 LISTS = {}
-ENCHANTABILITY = {'book': 1, 'bow': 1, 'crossbow': 1, 'fishing_rod': 1, 'trident': 1}
+ENCHANTABILITY = {'book': 1, 'bow': 1, 'crossbow': 1, 'fishing_rod': 1, 'trident': 1, 'mace': 15}
 for mat, v in (('leather', 15), ('chainmail', 12), ('iron', 9), ('golden', 25), ('diamond', 10), ('netherite', 15)):
     for part in ('helmet', 'chestplate', 'leggings', 'boots'): ENCHANTABILITY[mat + '_' + part] = v
 for mat, v in (('wooden', 15), ('stone', 5), ('iron', 14), ('golden', 22), ('diamond', 10), ('netherite', 15)):
@@ -107,10 +126,11 @@ def fns(e, lunge):
     raw = L(e.get('functions', [])) + L(e.get('modifier', []))
     for f in raw:
         t = bare(f.get('function') or f.get('type'))
+        assert 'random_chance' not in json.dumps(f.get('conditions', [])), f   # a function's own conditions: only biome checks, no random number
         if t == 'sequence': raw += L(f['functions']); continue
         if t == 'set_count': out.append(['c'] + number(f['count']))
         elif t == 'enchant_randomly':
-            opt = f.get('options'); assert opt, f
+            opt = f.get('options', '#minecraft:on_random_loot')   # tables in the pre-1.21 format: no list means this tag in 1.21
             key = ','.join(L(opt)) + ('+lunge' if lunge else '')
             if key not in LISTS: LISTS[key] = ench_list(opt, lunge)
             it = cur_item[0]
@@ -127,32 +147,47 @@ def fns(e, lunge):
             for h in horns: keys.add('instrument.minecraft.' + h)
             out.append(['h', [EN.get('instrument.minecraft.' + h, h) for h in horns]])
         elif t == 'set_potion':
-            k = 'item.minecraft.potion.effect.' + bare(f['id']); keys.add(k); out.append(['p', EN.get(k, bare(f['id']))])
+            pid = bare(f['id']); base = pid.replace('strong_', '').replace('long_', '')
+            k = 'item.minecraft.potion.effect.' + base; keys.add(k)
+            out.append(['p', EN.get(k, base) + (' II' if pid.startswith('strong_') else ' (long)' if pid.startswith('long_') else '')])
         elif t == 'enchant_with_levels':
-            opt = f.get('options'); assert opt, f
+            opt = f.get('options') or ('#minecraft:on_random_loot' if f.get('treasure') else '#minecraft:in_enchanting_table')
             key = ','.join(L(opt)) + ('+lunge' if lunge else '')
             if key not in LISTS: LISTS[key] = ench_list(opt, lunge)
             out.append(['el', for_item(key, cur_item[0])] + number(f['levels']))
-        elif t in ('set_name', 'set_lore', 'set_components', 'exploration_map'): pass
+        elif t == 'set_stew_effect':
+            effs = []
+            for x in f['effects']:
+                k = 'effect.minecraft.' + bare(x['type']); keys.add(k); effs.append([EN.get(k, bare(x['type']))] + number(x['duration']))
+            out.append(['s', effs])
+        elif t in ('set_name', 'set_lore', 'set_components', 'exploration_map', 'filtered', 'set_ominous_bottle_amplifier'): pass
         else: raise SystemExit('loot function not handled yet: ' + t)
     return out
+def conditions(cs):   # -> (can it be there at all, [chances to roll]); location checks are biome tests: false, or true when inverted
+    out = []
+    for c in cs:
+        t = bare(c.get('condition') or c.get('type'))
+        if t == 'random_chance': out.append(float(c['chance']))
+        elif t == 'location_check': return False, []
+        elif t == 'inverted' and bare(c['term'].get('condition') or c['term'].get('type')) == 'location_check': pass
+        else: raise SystemExit('loot condition not handled yet: ' + t)
+    return True, out
 def table(path, lunge):
     d = json.load(open(path)); pools = []
     for p in d['pools']:
-        assert not p.get('conditions') and not p.get('condition'), path
+        pok, pcs = conditions(L(p.get('conditions', [])) + L(p.get('condition', [])))
+        assert pok, path
         ents = []
         for e in p['entries']:
             t = bare(e['type'])
             assert t in ('item', 'empty'), (path, e)
-            conds = L(e.get('conditions', [])) + L(e.get('condition', []))
-            # location_check: only in some biomes (e.g. a disc in sulfur caves); taken as not there, like xpple/cubiomes
-            if any(bare(c['condition'] if 'condition' in c else c['type']) == 'location_check' for c in conds): continue
-            assert not conds, (path, e)
-            ents.append([item(e['name']) if t == 'item' else -1, e.get('weight', 1), fns(e, lunge)])
+            ok, cs = conditions(L(e.get('conditions', [])) + L(e.get('condition', [])))
+            if not ok: continue   # never there (a biome check, taken as false like xpple/cubiomes)
+            ents.append([item(e['name']) if t == 'item' else -1, e.get('weight', 1), fns(e, lunge)] + ([cs] if cs else []))
         pf = []
         if p.get('functions') or p.get('modifier'):   # functions for every item of the pool, after the item's own
             cur_item[0] = bare(p['entries'][0].get('name', '')); pf = fns(p, lunge)
-        pools.append([number(p['rolls']), ents] + ([pf] if pf else []))
+        pools.append([number(p['rolls']), ents] + ([pf or 0, pcs] if pcs else [pf] if pf else []))
     return pools
 
 OUT = {}
@@ -174,7 +209,8 @@ js = ['// ---------- chest loot tables for the structure plans (generated by i18
       '// LOOT_TABLES[name] = [[first version, pools]], a pool = [[min rolls, max rolls], entries], an entry = [item (-1 empty), weight, functions]',
       '// a pool may have a third part: functions for every item of the pool',
       '// functions: ["c", min, max] set count | ["er", list] enchant randomly from LOOT_LISTS[list] | ["el", LOOT_FOR key, min, max] enchant with levels',
-      '//   | ["f"] wear (one random number) | ["h", names] goat horn sound | ["p", name] potion',
+      '//   | ["f"] wear (one random number) | ["h", names] goat horn sound | ["p", name] potion | ["s", [[effect, min, max]]] stew effect',
+      '// an entry may have a 4th part, chances it must pass (random_chance); a pool may have a 4th part too, with the 3rd then 0 or its functions',
       'const LOOT_ITEMS = ' + json.dumps(ITEMS, ensure_ascii=False, separators=(',', ':')) + ';   // [id, name, texture]',
       'const LOOT_ENCH = ' + json.dumps(ENCH, ensure_ascii=False, separators=(',', ':')) + ';   // [id, name, max level, min cost base, +per level, max cost base, +per level, weight]',
       'const LOOT_LISTS = ' + json.dumps(LISTS, separators=(',', ':')) + ';',

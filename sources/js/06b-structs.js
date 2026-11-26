@@ -413,6 +413,7 @@ function lootStructure(key, ws, x, z, ver, biome) {
   const plan = o => { o.chests.forEach(roll); return Object.assign({ key, x, z, minX, minZ, pieces: [] }, o); };
   const saltKey = key.startsWith('bas_') ? 'bastion' : key === 'endship' ? 'endcity' : key === 'mineshaft' && /badlands/.test(biome || '') ? 'mineshaft_mesa' : key;
   if (key === 'pyramid') return lootPyramid(ws, x, z, ver);
+  if (typeof LOOT_MORE !== 'undefined' && LOOT_MORE[key]) { const o2 = LOOT_MORE[key](ws, x, z, ver, biome); return o2 && plan(o2); }   // js/06b2-structs2.js, js/06e-ancient.js
   const salt = lootSalt(saltKey, ver); if (!salt) return null;
   if (key === 'treasure') {
     const r = chunkXoro(ws, minX, minZ, salt), c = { x: minX + 9, z: minZ + 9, table: 'chests/buried_treasure', seed: r.nextLongJ() };
@@ -445,4 +446,4 @@ function lootStructure(key, ws, x, z, ver, biome) {
   return null;
 }
 LOOT_KEYS.clear();
-['pyramid', 'treasure', 'outpost', 'bas_treasure', 'bas_units', 'bas_hoglin', 'bas_bridge', 'endship', 'endcity', 'stronghold', 'mineshaft'].forEach(k => LOOT_KEYS.add(k));
+['pyramid', 'treasure', 'outpost', 'bas_treasure', 'bas_units', 'bas_hoglin', 'bas_bridge', 'endship', 'endcity', 'stronghold', 'mineshaft', 'jungle', 'igloo', 'shipwreck', 'portal', 'nportal', 'fortress', 'camp'].forEach(k => LOOT_KEYS.add(k));

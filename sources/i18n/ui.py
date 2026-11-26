@@ -398,4 +398,13 @@ UI = {
 "Corridor with a spider spawner": ["Couloir avec un générateur d'araignées", "Pasillo con un generador de arañas", "Gang mit Spinnen-Spawner", "Corridoio con un generatore di ragni", "Corredor com um gerador de aranhas", "Korytarz ze spawnerem pająków", "Gang met een spinnenspawner"],
 "Beach sand": ["Sable de plage", "Arena de playa", "Strandsand", "Sabbia di spiaggia", "Areia de praia", "Piasek plaży", "Strandzand"],
 "See it all": ["Tout voir", "Verlo todo", "Alles zeigen", "Vedi tutto", "Ver tudo", "Pokaż wszystko", "Alles zien"],
+"Dispenser": ["Distributeur", "Dispensador", "Werfer", "Dispenser", "Ejetor", "Dozownik", "Dispenser"],
+"Barrel": ["Tonneau", "Barril", "Fass", "Barile", "Barril", "Beczka", "Ton"],
+"Basement (under the igloo)": ["Sous-sol (sous l'igloo)", "Sótano (bajo el iglú)", "Keller (unter dem Iglu)", "Seminterrato (sotto l'igloo)", "Porão (sob o iglu)", "Piwnica (pod igloo)", "Kelder (onder de iglo)"],
+"Shipwreck (rotten)": ["Épave (pourrie)", "Naufragio (podrido)", "Schiffswrack (morsch)", "Relitto (marcio)", "Naufrágio (podre)", "Wrak (zbutwiały)", "Scheepswrak (rot)"],
+"Giant ruined portal": ["Portail en ruine géant", "Portal en ruinas gigante", "Riesige Portalruine", "Portale in rovina gigante", "Portal em ruínas gigante", "Gigantyczny zrujnowany portal", "Reusachtig vervallen portaal"],
+"Corridor turn (chest 1 in 3)": ["Virage de couloir (coffre 1 fois sur 3)", "Giro de pasillo (cofre 1 de cada 3)", "Gangkurve (Truhe 1 von 3)", "Svolta del corridoio (baule 1 su 3)", "Curva de corredor (baú 1 em 3)", "Zakręt korytarza (skrzynia 1 na 3)", "Gangbocht (kist 1 op 3)"],
+"Campsite (roughly here)": ["Campement (à peu près ici)", "Campamento (más o menos aquí)", "Lagerplatz (ungefähr hier)", "Accampamento (più o meno qui)", "Acampamento (mais ou menos aqui)", "Obozowisko (mniej więcej tu)", "Kampeerplek (ongeveer hier)"],
+"Tent (roughly here)": ["Tente (à peu près ici)", "Tienda (más o menos aquí)", "Zelt (ungefähr hier)", "Tenda (più o meno qui)", "Barraca (mais ou menos aqui)", "Namiot (mniej więcej tu)", "Tent (ongeveer hier)"],
+"This igloo has no basement, so no chest.": ["Cet igloo n'a pas de sous-sol, donc pas de coffre.", "Este iglú no tiene sótano, así que no hay cofre.", "Dieses Iglu hat keinen Keller, also keine Truhe.", "Questo igloo non ha seminterrato, quindi niente baule.", "Este iglu não tem porão, então não há baú.", "To igloo nie ma piwnicy, więc nie ma skrzyni.", "Deze iglo heeft geen kelder, dus geen kist."],
 }

@@ -46,6 +46,13 @@ const LOOK = {
   bastion: () => ['Start of the bastion', ['block/polished_blackstone_bricks']],
   outpost: () => ['Watchtower', ['block/dark_oak_planks']],
   treasure: () => ['Beach sand', ['block/sand']],
+  jungle: () => ['Jungle temple', ['block/mossy_cobblestone']],
+  igloo: p => p.t ? ['Basement (under the igloo)', ['block/stone_bricks'], .35] : ['Igloo', ['block/snow']],
+  shipwreck: p => p.t ? ['Shipwreck (rotten)', ['block/spruce_planks'], .3] : ['Shipwreck', ['block/spruce_planks']],
+  portal: p => p.t ? ['Giant ruined portal', ['block/crying_obsidian']] : ['Ruined portal', ['block/obsidian']],
+  nportal: p => p.t ? ['Giant ruined portal', ['block/crying_obsidian']] : ['Ruined portal', ['block/obsidian']],
+  fortress: p => [9, 10].includes(p.t) ? ['Corridor turn (chest 1 in 3)', ['block/red_nether_bricks']] : p.t >= 7 ? ['Corridor', ['block/nether_bricks'], .2] : ['Bridge', ['block/nether_bricks']],
+  camp: p => p.t ? ['Campsite (roughly here)', ['block/coarse_dirt']] : ['Tent (roughly here)', ['block/white_wool']],
 };
 const planKind = key => key.startsWith('bas_') ? 'bastion' : key === 'endship' ? 'endcity' : key;
 const texLayers = (tex, dark) => (dark ? [`linear-gradient(rgba(0,0,0,${dark}),rgba(0,0,0,${dark}))`] : []).concat(tex.map(t => `url('${texUrl(t)}'),url('${texUrl(t, 1)}')`)).join(',');
@@ -98,11 +105,18 @@ function pvWire() {
   const up = () => { drag = null; v.classList.remove('grab'); };
   v.addEventListener('pointerup', up); v.addEventListener('pointercancel', up);
 }
-const chestName = (S, j) => S.chests[j].ship ? 'Ship chest' : S.chests[j].cart ? 'Minecart' : 'Chest';
+const chestName = (S, j) => { const c = S.chests[j]; return c.ship ? 'Ship chest' : c.cart ? 'Minecart' : c.disp ? 'Dispenser' : c.barrel ? 'Barrel' : 'Chest'; };
 const PLAN_INFO = {
   pyramid: ['Desert pyramid', "The 4 chests are in a hidden room about 12 blocks under the blue block in the middle of the floor. A pressure plate in that room sets off 9 TNT: don't step on it."],
   treasure: ['Buried treasure', 'One chest, buried at exactly these X and Z, usually a few blocks under the sand or gravel of a beach or the sea floor.'],
   outpost: ['Pillager outpost', 'The chest is on the top floor of the watchtower. Pillagers keep spawning around it.'],
+  jungle: ['Jungle temple', 'Two chests: one in the room under the lever puzzle, one past the tripwires at the back. The two dispensers shoot arrows at the tripwires: their arrows are in the list too.'],
+  igloo: ['Igloo', 'The chest is in the basement, under the carpet in the igloo (break it, then climb down the ladder). Only half of the igloos have a basement.'],
+  shipwreck: ['Shipwreck', 'Supply chest at the front, map chest in the middle (the treasure map), treasure chest at the back. Broken wrecks have only some of them.'],
+  portal: ['Ruined portal', 'One chest, near the portal: where exactly depends on the ground, so the marker only shows the portal.'],
+  nportal: ['Ruined portal', 'One chest, near the portal: where exactly depends on the ground, so the marker only shows the portal.'],
+  fortress: ['Nether fortress', 'Chests are in some corridor turns (about 1 in 3). The fortress drawn here can be cut short by lava lakes or the edges of the Nether.'],
+  camp: ['Abandoned camp', 'A tent and a campsite with chests and barrels. Their places are only roughly known: look around the markers.'],
   bastion: ['Bastion remnant', 'Only the chests of the part the bastion starts from are shown here. The other rooms and the treasure room chest are not worked out yet.'],
   endcity: ['End city', 'Tall towers have 2 chests at the top, some houses have 1, and the ship has 2 (and the elytra). The plan is flat: chests can be high up.'],
   stronghold: ['Stronghold', 'Chests are in chest corridors, store rooms and libraries (2 in a tall library). Where a cave cuts through, a chest can be missing or hold something else.'],
@@ -134,7 +148,7 @@ function renderPlan() {
     $('planMap').innerHTML = (S.key === 'pyramid' ? planHTML(S) : schemHTML(S)) + `<p class="hint">${note}</p>`;
     S.drawn = true; if (S.key !== 'pyramid') requestAnimationFrame(pvWire);
   } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
-  if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">No chest in this one.</p>`; return; }
+  if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">${S.note || 'No chest in this one.'}</p>`; return; }
   planSel = Math.min(planSel, S.chests.length - 1);
   $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}"><span>${chestName(S, k)}</span> ${k + 1}</button>`).join('')}</div>${chestHTML(S, planSel)}
     <p class="hint">Contents are fixed by the seed when the structure is built. Already opened chests, or chests changed by another player, won't match.</p>`;
