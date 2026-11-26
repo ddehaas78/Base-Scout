@@ -729,6 +729,11 @@ if (typeof self !== 'undefined' && typeof window === 'undefined' && typeof modul
       else if (m.type === 'crack') runCrack(m, d => self.postMessage(d));
       else if (m.type === 'crack3') runCrack3(m, d => self.postMessage(d));
       else if (m.type === 'info') { useSeed(m.seed, m.ver); self.postMessage({ type: 'info', seed: m.seed, ver: verKey(m.ver), spawn: spawnPos() }); }
+      else if (m.type === 'pts') {   // the biome at exact points (structure checks: 1:4 cells, at the given height)
+        useSeed(m.seed, m.ver); const p = E.alloc(4), ids = [];
+        for (const [x, y, z] of m.pts) { E.gen_rows(4, x >> 2, z >> 2, 1, 0, 1, y >> 2, p); ids.push(new Int32Array(E.memory.buffer, p, 1)[0]); }
+        E.dealloc(p); self.postMessage({ type: 'pts', id: m.id, ids });
+      }
       else if (m.type === 'area') { const a = m.dim ? areaDim(m) : area(m); self.postMessage(a, [a.grid.buffer]); }
     } catch (err) { self.postMessage({ type: 'error', message: String(err && err.message || err) }); }
   };

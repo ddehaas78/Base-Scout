@@ -71,6 +71,7 @@ const startLabel = () => startPos.x === 0 && startPos.z === 0 ? '0, 0' : `${star
 
 let renderT;
 function onMsg(m) {
+  if (m.type === 'pts') return onPts(m);
   if (m.type === 'ready') {
     colors = m.colors; names = m.names; renderPalette(); renderTarget();
     $('stext').textContent = 'Enter your seed and drag what you want into the rings.';

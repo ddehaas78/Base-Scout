@@ -1,11 +1,12 @@
-// ---------- name tooltips: hold the mouse on a button or chip for 1 s and its full name shows, like an item in the game ----------
+// ---------- name tooltips: hold the mouse on a button or chip for a third of a second and its full name shows, like an item in the game ----------
+// Chest slots (data-tip-html) show at once, with the item's name and what it holds, like the game's inventory.
 // For names cut short ("Bastion: ...") and icon buttons. Uses the element's title if it has one, else its text.
 // The native title is taken off while hovering so the browser doesn't show a second box.
 (() => {
   const tip = document.createElement('div');
   tip.className = 'mctip'; tip.hidden = true; tip.setAttribute('role', 'tooltip');
   document.body.appendChild(tip);
-  const SEL = 'button, .chip, select, [role="button"], [data-tip]';
+  const SEL = '[data-tip-html], button, .chip, select, [role="button"], [data-tip]';
   let cur = null, timer = 0, last = [0, 0];
   const textOf = el => (el.dataset.tip || el.dataset.tipTitle || el.getAttribute('title') || (el.tagName === 'SELECT' ? el.selectedOptions[0]?.textContent : el.textContent) || '').replace(/\s+/g, ' ').trim();
   const place = () => {
@@ -28,11 +29,13 @@
     hide(); if (!el || el.disabled) return;
     cur = el; last = [e.clientX, e.clientY];
     if (el.hasAttribute('title')) { el.dataset.tipTitle = el.getAttribute('title'); el.removeAttribute('title'); }
+    const rich = el.dataset.tipHtml;
     timer = setTimeout(() => {
       if (cur !== el || !el.isConnected) return;
-      const t = textOf(el); if (!t) return;
-      tip.textContent = t; tip.hidden = false; place();
-    }, 1000);
+      if (rich) tip.innerHTML = rich;
+      else { const t = textOf(el); if (!t) return; tip.textContent = t; }
+      tip.hidden = false; place();
+    }, rich ? 0 : 330);
   });
   document.addEventListener('pointermove', e => { last = [e.clientX, e.clientY]; if (!tip.hidden) place(); }, { passive: true });
   document.addEventListener('pointerout', e => { if (cur && !cur.contains(e.relatedTarget)) hide(); });

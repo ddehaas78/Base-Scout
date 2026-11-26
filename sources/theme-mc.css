@@ -335,13 +335,15 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 /* structure plan window (Seed map: double-click a desert pyramid) */
 .plandlg { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.6); display: grid; place-items: center; padding: 16px; }
 .plandlg[hidden] { display: none !important; }
-.planbox { width: min(980px, 100%); max-height: calc(100vh / var(--ui) - 40px); overflow: auto; display: grid; gap: 6px; }
+.planbox { width: min(980px, 100%); max-height: calc(100vh / var(--ui) - 40px); overflow: hidden auto; display: grid; gap: 6px; }
 .planhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 2px 4px; }
 .planhead h2 { margin: 0; font-family: var(--mc); color: #fff; font-size: 18px; }
 .planhead h2 .sub { color: #c8c8c8; font-size: 14px; margin-left: 8px; }
 #planClose { padding: 2px 12px !important; font-size: 18px; }
-.planbody { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: start; }
-@media (max-width: 760px) { .planbody { grid-template-columns: minmax(0, 1fr); } }
+/* the plan takes the room left, the chest keeps its size: the window never scrolls sideways */
+.planbody { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; }
+.planbody > .sec { min-width: 0; }
+@media (max-width: 760px) { .planbody { grid-template-columns: minmax(0, 1fr); } .pview { height: clamp(160px, calc(100vh / var(--ui) - 640px), 320px); } }
 .pgridwrap { position: relative; padding-top: 16px; width: max-content; }
 .pnorth { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-family: var(--mc); color: #ffff55; font-size: 12px; }
 .pgrid { display: grid; grid-template-columns: repeat(21, 15px); grid-template-rows: repeat(21, 15px); box-shadow: 0 0 0 2px #000; image-rendering: pixelated; }
@@ -352,8 +354,8 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .pchest { pointer-events: auto; z-index: 2; width: 15px; height: 15px; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important;
   background: #8a5a2b !important; box-shadow: inset 0 0 0 1px #3b2410, inset 0 -6px 0 0 #6b4320 !important; color: #ffff55 !important; font: 9px/15px var(--mc) !important; text-shadow: 1px 1px 0 #000; cursor: pointer; }
 .pchest.on { outline: 2px solid #ffff55; outline-offset: 1px; }
-#planMap .hint { max-width: 470px; margin: 8px 0 0; }
-.pview { position: relative; width: min(470px, calc(100vw - 80px)); height: 420px; overflow: hidden; background: #101010; box-shadow: 0 0 0 2px #000, inset 0 0 0 1px #2a2a2a; touch-action: none; cursor: grab; user-select: none; }
+#planMap .hint { margin: 8px 0 0; }
+.pview { position: relative; width: 100%; height: clamp(200px, calc(100vh / var(--ui) - 330px), 420px); overflow: hidden; background: #101010; box-shadow: 0 0 0 2px #000, inset 0 0 0 1px #2a2a2a; touch-action: none; cursor: grab; user-select: none; }
 .pview.grab { cursor: grabbing; }
 .pview .pnorth { top: 4px; left: 8px; transform: none; z-index: 3; text-shadow: 1px 1px 0 #000; }
 .pworld { position: absolute; left: 0; top: 0; --k: 1; }
@@ -374,9 +376,11 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .mcchest { background: #c6c6c6; padding: 8px 8px 10px; width: max-content; max-width: 100%; box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 0 0 0 2px #000; }
 .mct { font-family: var(--mc); color: #404040; font-size: 13px; margin: 0 0 6px 2px; display: flex; gap: 6px; align-items: baseline; }
 .mct .mcxz { margin-left: auto; color: #606060; font-size: 11px; }
-.slots { display: grid; grid-template-columns: repeat(9, 36px); grid-auto-rows: 36px; }
+/* slot size shrinks on narrow screens so the 9 columns always fit */
+.planbox { --slot: clamp(24px, calc((100vw / var(--ui) - 90px) / 9), 36px); }
+.slots { display: grid; grid-template-columns: repeat(9, var(--slot, 36px)); grid-auto-rows: var(--slot, 36px); }
 .slot { position: relative; display: grid; place-items: center; background: #8b8b8b; box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff; }
-.slot img { width: 32px; height: 32px; image-rendering: pixelated; }
+.slot img { width: calc(var(--slot, 36px) - 4px); height: calc(var(--slot, 36px) - 4px); image-rendering: pixelated; }
 .slot b { position: absolute; right: 2px; bottom: 0; font: 13px var(--mc); font-weight: normal; color: #fff; text-shadow: 2px 2px 0 #3f3f3f; }
 .slot.glint img { filter: drop-shadow(0 0 2px #b46cff) drop-shadow(0 0 1px #d9a6ff); }
 .pbest { margin-top: 10px; font-size: 12.5px; color: #e0e0e0; font-family: var(--mc); line-height: 1.6; }
@@ -388,3 +392,13 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .mctip[hidden] { display: none; }
 /* abandoned camp: which tent and campsite this one is */
 .pinfo { margin: 0 0 8px; font-family: var(--mc); font-size: 12.5px; line-height: 1.6; color: #e0e0e0; }
+/* item tooltips in chests: name (aqua when enchanted, yellow when rare), then grey lines like the game */
+.mctip .tipn { color: #fff; }
+.mctip .tipn.ench { color: #55ffff; }
+.mctip .tipn.rare { color: #ffff55; }
+.mctip .tipl { color: #aaaaaa; }
+.mctip .tipd { color: #777; }
+.slot[data-tip-html] { cursor: default; }
+#planChests { max-width: calc(var(--slot, 36px) * 9 + 40px); }
+.pgridwrap { max-width: 100%; }
+.slot img.own { image-rendering: auto; }   /* 3D block icons are drawn smooth, like the game's */

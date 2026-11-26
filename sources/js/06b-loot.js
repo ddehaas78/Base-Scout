@@ -95,11 +95,12 @@ function lootEnchant(r, key, cost) {
 // roll a loot table: a list of { i: item, n: count, ench: [[enchantment, level]], note? }
 // (pools with conditions and entries with chances follow xpple/cubiomes: each entry's chances are rolled every time, in order)
 const chance = (r, c) => r.nextFloat() < Math.fround(c);
-function lootRoll(name, ver, seed) {
+function lootRoll(name, ver, seed, biome) {   // biome: the chest's own (some entries are left out in some biomes)
   const T = lootTableFor(name, ver); if (!T) return null;
   const r = new LootRand(BigInt(seed)), out = [];
   for (const [[a, b], ents, poolFns, poolIf] of T) {
-    if (poolIf && !poolIf.every(c => chance(r, c))) continue;
+    const pass = c => typeof c === 'number' ? chance(r, c) : !(c[0] === 'nb' && c[1].includes(biome));
+    if (poolIf && !poolIf.every(pass)) continue;
     const rolls = a === b ? a : r.nextInt(b - a + 1) + a, total = ents.reduce((s, e) => s + e[1], 0), conditional = ents.some(e => e[3]);
     for (let k = 0; k < rolls; k++) {
       let e = null;
@@ -108,7 +109,7 @@ function lootRoll(name, ver, seed) {
         e = ents[0];
         if (ents.length > 1) { let w = r.nextInt(total); for (e of ents) { w -= e[1]; if (w < 0) break; } }
       } else {
-        const ok = ents.filter(x => (!x[3] || x[3].every(c => chance(r, c))) && x[1] > 0);
+        const ok = ents.filter(x => (!x[3] || x[3].every(pass)) && x[1] > 0);
         if (!ok.length) continue;
         e = ok[0];
         if (ok.length > 1) { let w = r.nextInt(ok.reduce((s, x) => s + x[1], 0)); for (e of ok) { w -= e[1]; if (w < 0) break; } }
@@ -122,6 +123,7 @@ function lootRoll(name, ver, seed) {
         else if (f[0] === 'f') r.nextFloat();   // wear: one random number
         else if (f[0] === 'h') it.note = f[1][r.nextInt(f[1].length)];   // goat horn sound
         else if (f[0] === 'p') it.note = f[1];   // potion
+        else if (f[0] === 'n') it.name = f[1];   // its own name
         else if (f[0] === 's') { const [nm, lo, hi] = f[1][r.nextInt(f[1].length)]; r.nextInt(hi - lo + 1); it.note = nm; }   // stew effect, then its length
       }
       out.push(it);

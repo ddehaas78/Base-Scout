@@ -164,16 +164,27 @@ function iglooBasement(q) {   // the igloo's own random numbers: turn, then base
   if (!BASEMENT.has(k)) { if (BASEMENT.size > 5000) BASEMENT.clear(); const r = chunkRand(BigInt(seed), q.x >> 4, q.z >> 4); r.nextInt(4); BASEMENT.set(k, r.nextDouble() < 0.5); }
   return BASEMENT.get(k);
 }
-// abandoned camps whose campsite has a secret chest: a small chest on the icon (see campVariant in js/06b2-structs2.js)
-const SECRET = new Map();
+// abandoned camps with a secret chest: a small chest on the icon. Each camp is put together like the game does it
+// (js/06d-jigsaw.js), with the exact biome at its tent asked from the engine, a batch at a time.
+const SECRET = new Map(); let secretQ = [], secretT = 0;
 function campSecret(M, q) {
-  const seed = parseSeed($('seed').value); if (seed === null || typeof campVariant === 'undefined') return false;
-  const k = seed + ',' + q.x + ',' + q.z;
-  let v = SECRET.get(k);
-  if (v === undefined) { if (SECRET.size > 5000) SECRET.clear(); v = campVariant(seed, q.x, q.z).site; SECRET.set(k, v); }
-  if (v <= 45) return campSiteKinds(v, '').includes('s');
-  const b = M.biomeAt(q.x, q.z);   // the last 4 campsites depend on the biome: only known where the map is drawn
-  return !!b && campSiteKinds(v, b.toLowerCase().replace(/ /g, '_')).includes('s');
+  const seed = parseSeed($('seed').value); if (seed === null || typeof campBuild === 'undefined' || !verAtLeast(VER, '26.3')) return false;
+  const k = VER + ',' + seed + ',' + q.x + ',' + q.z, v = SECRET.get(k);
+  if (v !== undefined) return v === true;
+  if (SECRET.size > 5000) SECRET.clear();
+  SECRET.set(k, 'wait'); secretQ.push([k, seed, q.x, q.z]);
+  if (!secretT) secretT = setTimeout(flushSecret, 60);
+  return false;
+}
+async function flushSecret() {
+  const list = secretQ.splice(0, 400); secretT = list.length && secretQ.length ? setTimeout(flushSecret, 60) : 0;
+  const guess = list.map(([k, seed, x, z]) => campBuild(seed, x, z, 'forest'));   // the tent's middle (the same place for nearly all biomes)
+  const bs = await exactBiomes(guess.map(C => C.A.center));
+  list.forEach(([k, seed, x, z], i) => {
+    const C = CAMP_BIOMES.includes(bs[i]) && campBuild(seed, x, z, bs[i]);
+    SECRET.set(k, !!C && C.conts.some(c => /secret/.test(c.table)));
+  });
+  xMap.draw(); findMap.draw();
 }
 function drawIcons(M, keys, sizeFor, tile) {
   const { ctx, cv } = M, d = drawScale();

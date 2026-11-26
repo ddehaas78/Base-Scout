@@ -43,7 +43,10 @@ const LOOK = {
     : p.add & 2 ? ['Corridor with a spider spawner', ['block/cobweb', 'block/oak_planks']] : p.add & 1 ? ['Corridor with rails', ['block/rail', 'block/oak_planks']] : ['Corridor', ['block/oak_planks']],
   endcity: p => p.t === 12 ? ['End ship', ['block/purpur_block'], .35] : [2, 3, 4, 5].includes(p.t) ? ['Bridge', ['block/end_stone_bricks']]
     : p.t === 8 ? ['Tower top (2 chests)', ['block/purpur_pillar_top']] : [0, 1, 9, 10, 11, 13, 14, 15].includes(p.t) ? ['House', ['block/purpur_block'], .12] : ['Tower', ['block/purpur_block']],
-  bastion: () => ['Start of the bastion', ['block/polished_blackstone_bricks']],
+  bastion: p => /air_base|big_air_full|starting_pieces\/entrance/.test(p.t) ? ['Start of the bastion', ['block/polished_blackstone_bricks'], .1]
+    : /ramparts|walls|rampart_plates|edges/.test(p.t) ? ['Ramparts and walls', ['block/cracked_polished_blackstone_bricks'], .3]
+    : /treasure/.test(p.t) ? ['Treasure room', ['block/gilded_blackstone']] : /hoglin_stable/.test(p.t) ? ['Hoglin stables', ['block/blackstone_top']]
+    : /bridge/.test(p.t) ? ['Bridge', ['block/basalt_top']] : ['Housing', ['block/polished_blackstone_bricks']],
   outpost: () => ['Watchtower', ['block/dark_oak_planks']],
   treasure: () => ['Beach sand', ['block/sand']],
   jungle: () => ['Jungle temple', ['block/mossy_cobblestone']],
@@ -52,7 +55,10 @@ const LOOK = {
   portal: p => p.t ? ['Giant ruined portal', ['block/crying_obsidian']] : ['Ruined portal', ['block/obsidian']],
   nportal: p => p.t ? ['Giant ruined portal', ['block/crying_obsidian']] : ['Ruined portal', ['block/obsidian']],
   fortress: p => [9, 10].includes(p.t) ? ['Corridor turn (chest 1 in 3)', ['block/red_nether_bricks']] : p.t >= 7 ? ['Corridor', ['block/nether_bricks'], .2] : ['Bridge', ['block/nether_bricks']],
-  camp: p => p.t ? ['Campsite (roughly here)', ['block/coarse_dirt']] : ['Tent (roughly here)', ['block/white_wool']],
+  camp: p => p.t === 2 ? ['Tree', ['block/oak_leaves'], .2] : p.t ? ['Campsite', ['block/coarse_dirt']] : ['Tent', ['block/white_wool']],
+  ancient: p => /city_center/.test(p.t) && !/walls/.test(p.t) ? ['City center (portal frame)', ['block/reinforced_deepslate_top']]
+    : /walls/.test(p.t) ? ['Walls', ['block/deepslate_bricks'], .25] : /ice_box/.test(p.t) ? ['Ice box', ['block/packed_ice']]
+    : /entrance/.test(p.t) ? ['Entrance', ['block/deepslate_tiles'], .35] : /structures/.test(p.t) ? ['Building', ['block/deepslate_tiles']] : ['Sculk', ['block/sculk']],
 };
 const planKind = key => key.startsWith('bas_') ? 'bastion' : key === 'endship' ? 'endcity' : key;
 const texLayers = (tex, dark) => (dark ? [`linear-gradient(rgba(0,0,0,${dark}),rgba(0,0,0,${dark}))`] : []).concat(tex.map(t => `url('${texUrl(t)}'),url('${texUrl(t, 1)}')`)).join(',');
@@ -116,20 +122,47 @@ const PLAN_INFO = {
   portal: ['Ruined portal', 'One chest, near the portal: where exactly depends on the ground, so the marker only shows the portal.'],
   nportal: ['Ruined portal', 'One chest, near the portal: where exactly depends on the ground, so the marker only shows the portal.'],
   fortress: ['Nether fortress', 'Chests are in some corridor turns (about 1 in 3). The fortress drawn here can be cut short by lava lakes or the edges of the Nether.'],
-  camp: ['Abandoned camp', 'A tent and a campsite with chests and barrels. Their places are only roughly known: look around the markers.'],
-  bastion: ['Bastion remnant', 'Only the chests of the part the bastion starts from are shown here. The other rooms and the treasure room chest are not worked out yet.'],
+  camp: ['Abandoned camp', 'A tent and a campsite, put together like the game does it: chests and barrels are at these exact X and Z (their height depends on the ground). Some campsites also hide a secret chest.'],
+  ancient: ['Ancient city', 'Every chest of the city, at its exact place and height (Y): pieces are drawn flat, so chests on several floors can look close. Sneak: sculk shriekers call the Warden.'],
+  bastion: ['Bastion remnant', 'Every chest of the bastion, put together piece by piece like the game does it, at its exact place and height (Y). Pieces are drawn flat, so chests on several floors can look close.'],
   endcity: ['End city', 'Tall towers have 2 chests at the top, some houses have 1, and the ship has 2 (and the elytra). The plan is flat: chests can be high up.'],
   stronghold: ['Stronghold', 'Chests are in chest corridors, store rooms and libraries (2 in a tall library). Where a cave cuts through, a chest can be missing or hold something else.'],
   mineshaft: ['Mineshaft', 'Chests are in minecarts along the corridors. Parts in the air, in water or cut by caves are not built, which can change or remove chests.'],
 };
 const LOOT_BEST = /^(diamond|emerald|golden_apple|enchanted_golden_apple|diamond_horse_armor|diamond_nautilus_armor|heart_of_the_sea|ancient_debris|netherite_scrap|gold_block|name_tag|lodestone|music_disc_.*|.*_smithing_template)$/;   // shown in the Best line
-function slotHTML(s) {
+// explorer maps lead to the nearest structure of their kind (the game looks from the chest)
+const MAP_TARGET = { buried_treasure_map: 'treasure', abandoned_camp_map: 'camp', buried_ancient_city_map: 'ancient', buried_trial_chambers_map: 'trial',
+  buried_mineshaft_map: 'mineshaft', desert_pyramid_map: 'pyramid', jungle_pyramid_map: 'jungle', warm_ocean_ruins_map: 'ruins', woodland_mansion_map: 'mansion' };
+function mapTarget(key, c) {
+  let best = null, bd = Infinity;
+  for (const M of [xMap, findMap]) for (const q of (M.structs[key] || new Map()).values()) {
+    const d = Math.hypot(q.x - c.x, q.z - c.z); if (d < bd) { bd = d; best = q; }
+  }
+  return best && { x: best.x, z: best.z, d: Math.round(bd) };
+}
+// the item's tooltip, laid out like the game's: name, then grey lines (enchantments, effect, sound, where a map leads)
+function slotTip(s, it, name, ench, c) {
+  const sp = t => `<span>${escH(t)}</span>`, lines = [];
+  for (const [e, l] of s.ench) lines.push(sp(LOOT_ENCH[e][1] + (LOOT_ENCH[e][2] > 1 ? ' ' + ROMAN[l] : '')));
+  if (s.note) lines.push(it[0] === 'goat_horn' ? `${sp('Sound')}: ${sp(s.note)}` : it[0] === 'suspicious_stew' ? `${sp('Effect')}: ${sp(s.note)}` : sp(s.note));
+  const target = MAP_TARGET[it[0]];
+  if (target) {
+    const st = ALL_STRUCTS.find(x => x.key === target), t = c && mapTarget(target, c);
+    lines.push(`${sp('Leads to the nearest')} ${sp(st ? st.name : target)}`);
+    lines.push(t ? `${sp('Probably')} X ${t.x} · Z ${t.z} <span class="tipd">(${fmt(t.d)} ${sp('blocks')})</span>` : sp('Zoom the map out around here to see which one'));
+  }
+  if (s.n > 1) lines.push(`× ${s.n}`);
+  const cls = ench || it[0] === 'enchanted_golden_apple' ? 'tipn ench' : LOOT_BEST.test(it[0]) ? 'tipn rare' : 'tipn';
+  return `<div class="${cls}">${sp(name)}</div>` + lines.map(l => `<div class="tipl">${l}</div>`).join('');
+}
+function slotHTML(s, c) {
   if (!s) return '<i class="slot"></i>';
-  const it = LOOT_ITEMS[s.i], ench = s.ench.length, name = it[0] === 'book' && ench ? 'Enchanted Book' : it[1];
-  const tip = name + (ench ? ': ' + s.ench.map(([e, l]) => LOOT_ENCH[e][1] + (LOOT_ENCH[e][2] > 1 ? ' ' + ROMAN[l] : '')).join(', ') : '');
-  const tip2 = s.note ? tip + ' (' + s.note + ')' : tip;
+  const it = LOOT_ITEMS[s.i], ench = s.ench.length, name = s.name || (it[0] === 'book' && ench ? 'Enchanted Book' : it[1]);
   const tex = it[0] === 'book' && ench ? 'item/enchanted_book' : it[2];
-  return `<i class="slot${ench || it[0] === 'enchanted_golden_apple' ? ' glint' : ''}" title="${escH(tip2)}"><img src="${texUrl(tex)}" alt="${escH(name)}" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${texUrl(tex, 1)}'}">${s.n > 1 ? `<b>${s.n}</b>` : ''}</i>`;
+  const own = !(it[0] === 'book' && ench) && LOOT_ICONS[it[0]];   // blocks in 3D and newer items: js/06a2-looticons.js
+  const img = own ? `<img class="own" src="${own}" alt="${escH(name)}">`
+    : `<img src="${texUrl(tex)}" alt="${escH(name)}" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${texUrl(tex, 1)}'}">`;
+  return `<i class="slot${ench || it[0] === 'enchanted_golden_apple' ? ' glint' : ''}" data-tip-html="${escH(slotTip(s, it, name, ench, c))}">${img}${s.n > 1 ? `<b>${s.n}</b>` : ''}</i>`;
 }
 function chestHTML(S, k) {
   const c = S.chests[k];
@@ -137,7 +170,7 @@ function chestHTML(S, k) {
   const best = c.items.filter(s => s.ench.length || LOOT_BEST.test(LOOT_ITEMS[s.i][0]));
   const sp = t => `<span>${escH(t)}</span>`;   // one text per span, so each part gets translated
   const bestTxt = best.map(s => { const it = LOOT_ITEMS[s.i]; return (s.n > 1 ? s.n + ' ' : '') + sp(it[0] === 'book' && s.ench.length ? 'Enchanted Book' : it[1]) + (s.ench.length ? ' (' + s.ench.map(([e, l]) => sp(LOOT_ENCH[e][1] + (LOOT_ENCH[e][2] > 1 ? ' ' + ROMAN[l] : ''))).join(', ') + ')' : ''); });
-  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}<span class="mcxz">X ${c.x} · Z ${c.z}</span></div><div class="slots">${c.items.slots.map(slotHTML).join('')}</div></div>
+  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div>${c.unsure ? '<p class="hint">A tree grows in this chunk before this chest is filled: its contents can differ.</p>' : ''}<div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>
     ${bestTxt.length ? `<div class="pbest"><b>Best:</b> ${bestTxt.join(', ')}</div>` : ''}`;
 }
 function renderPlan() {
@@ -157,12 +190,22 @@ function renderPlan() {
 function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;
   const seed = parseSeed($('seed').value); if (seed === null) { toast('Enter a seed first.'); return true; }
-  planCur = lootStructure(q.key, BigInt(seed), q.x, q.z, VER, M.biomeAt(q.x, q.z) || ''); planSel = 0;
+  if (q.key === 'camp') {   // the camp depends on the exact biome at its tent: ask the engine first
+    const guess = String(M.biomeAt(q.x, q.z) || '').toLowerCase().replace(/ /g, '_');
+    campResolve(seed, q.x, q.z, guess).then(C => showPlan(C && lootStructure('camp', BigInt(seed), q.x, q.z, VER, C.biome, C)));
+    return true;
+  }
+  showPlan(lootStructure(q.key, BigInt(seed), q.x, q.z, VER, M.biomeAt(q.x, q.z) || ''));
+  return true;
+}
+function showPlan(p) {
+  planCur = p; planSel = 0;
   if (!planCur) { toast('No plan for this structure in this version.'); return true; }
   $('planDlg').hidden = false; renderPlan(); $('planClose').focus();
   return true;
 }
 const closePlan = () => { $('planDlg').hidden = true; planCur = null; };
+addEventListener('resize', () => { if (!$('planDlg').hidden && $('pview')) pvFit(); });   // the view follows the window's size
 $('planClose').onclick = closePlan;
 $('planDlg').addEventListener('click', e => { if (e.target === $('planDlg')) closePlan(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('planDlg').hidden) closePlan(); });

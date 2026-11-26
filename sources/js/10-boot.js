@@ -115,7 +115,7 @@ try {
       // the maps get their own engine: drawing a map never pauses a running search, and the other way round
       try {
         mapWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-        mapWorker.onmessage = ev => { const m = ev.data; if (m.type === 'ready') mapReady = true; else if (m.type === 'area') onMsg(m); else if (m.type === 'error') console.error(m.message); };
+        mapWorker.onmessage = ev => { const m = ev.data; if (m.type === 'ready') mapReady = true; else if (m.type === 'area') onMsg(m); else if (m.type === 'pts') onPts(m); else if (m.type === 'error') console.error(m.message); };
         const mb = buf.slice(0); mapWorker.postMessage({ type: 'init', wasm: mb }, [mb]);
       } catch (err) { console.error(err); mapWorker = null; }
       worker.postMessage({ type: 'init', wasm: buf }, [buf]);

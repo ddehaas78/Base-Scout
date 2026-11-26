@@ -185,38 +185,27 @@ LOOT_MORE.fortress = (ws, x, z, ver) => {
   return { pieces: pieces.filter(p => p.t !== NF_END), chests };
 };
 
-// ---- abandoned camp (26.3): a tent and a campsite, with chests and barrels; where they stand is only roughly known ----
+// ---- abandoned camp (26.3): a tent and a campsite, put together like the game does it (js/06d-jigsaw.js) ----
+// biome: the game's biome at the middle of the tent (each biome has its own camp); campResolve finds it
 const CAMP_BIOMES = ['bamboo_jungle', 'birch_forest', 'cherry_grove', 'dappled_forest', 'flower_forest', 'forest', 'meadow', 'old_growth_birch_forest', 'old_growth_pine_taiga',
   'old_growth_spruce_taiga', 'pale_garden', 'savanna', 'snowy_taiga', 'sparse_jungle', 'swamp', 'taiga', 'windswept_forest', 'wooded_badlands'];
-// what each tent (1-10, by biome) and campsite (1-45 shared, 46-49 by biome) holds: c common chest, s secret chest, b barrel
-const CAMP_DATA = {"tent":{"bamboo_jungle":{"1":"b","3":"b","2":"bbb","4":"bb","10":"bb","5":"c","8":"c","9":"c","6":"cc","7":"cb"},"birch_forest":{"1":"c","2":"c","4":"c","5":"c","9":"c","3":"b","6":"b","7":"b","8":"b","10":"bb"},"cherry_grove":{"1":"c","2":"c","4":"c","5":"c","7":"c","8":"c","3":"b","6":"ccc","9":"cc","10":"bb"},"dappled_forest":{"1":"b","3":"b","2":"bbb","4":"bb","10":"bb","5":"c","7":"c","8":"c","9":"c","6":"bc"},"flower_forest":{"1":"b","2":"c","3":"c","4":"c","5":"c","6":"c","8":"c","9":"c","7":"bb","10":"bb"},"forest":{"1":"b","2":"b","3":"b","10":"b","4":"bbb","5":"c","6":"c","8":"c","9":"c","7":"bb"},"meadow":{"1":"c","3":"c","7":"c","10":"c","2":"bbbb","4":"bb","5":"b","6":"b","8":"b","9":"b"},"old_growth_birch_forest":{"1":"c","2":"c","3":"c","4":"c","5":"c","6":"b","7":"b","8":"b","9":"b","10":"b"},"old_growth_pine_taiga":{"1":"b","3":"b","2":"bb","4":"bb","5":"c","6":"c","8":"c","9":"c","10":"c","7":"cb"},"old_growth_spruce_taiga":{"1":"b","2":"b","3":"b","9":"b","4":"bb","10":"bb","5":"c","6":"c","8":"c","7":"cb"},"pale_garden":{"1":"c","5":"c","6":"c","8":"c","9":"c","2":"b","3":"b","7":"b","4":"bb","10":"bb"},"savanna":{"1":"c","2":"c","3":"c","4":"c","5":"c","6":"b","7":"b","8":"b","9":"b","10":"b"},"snowy_taiga":{"1":"c","4":"c","10":"c","2":"bbb","3":"b","5":"b","6":"b","7":"b","8":"b","9":"b"},"sparse_jungle":{"1":"b","3":"b","2":"bb","4":"bb","10":"bb","5":"c","8":"c","6":"ccc","7":"cb","9":"cc"},"swamp":{"1":"b","2":"b","3":"b","4":"b","5":"b","6":"c","8":"c","9":"c","10":"c","7":"cb"},"taiga":{"1":"c","3":"c","5":"c","6":"c","7":"c","2":"b","4":"b","8":"b","9":"b","10":"bb"},"windswept_forest":{"1":"b","4":"b","6":"b","7":"b","9":"b","2":"bb","10":"bb","3":"c","5":"c","8":"c"},"wooded_badlands":{"1":"bbbb","2":"b","3":"b","5":"b","4":"bb","10":"bb","6":"c","7":"c","8":"c","9":"cc"}},"camp":{"1":"c","2":"c","3":"c","4":"c","5":"c","6":"sc","7":"sc","8":"sc","9":"sc","10":"sc","11":"c","12":"c","13":"c","14":"c","15":"c","16":"b","17":"b","18":"b","19":"b","20":"b","21":"b","22":"b","23":"b","24":"b","25":"b","26":"sb","27":"sb","28":"sb","29":"sb","30":"sb","31":"sc","32":"c","33":"c","34":"sb","35":"b","36":"sb","37":"b","38":"sb","39":"c","40":"cc","41":"c","42":"b","43":"sc","44":"b","45":"bc"},"campBiome":{"bamboo_jungle":{"1":"c","2":"b","3":"sc","4":"b"},"birch_forest":{"1":"c","2":"c","3":"cbb","4":"c"},"cherry_grove":{"1":"c","2":"b","3":"sc","4":"sbbb"},"dappled_forest":{"1":"c","2":"b","3":"sb","4":"sc"},"flower_forest":{"1":"c","2":"sc","3":"bc","4":"sb"},"forest":{"1":"b","2":"c","3":"sc","4":"sc"},"meadow":{"1":"c","2":"c","3":"sb","4":"sb"},"old_growth_birch_forest":{"1":"c","2":"sbb","3":"c","4":"sc"},"old_growth_pine_taiga":{"1":"b","2":"sc","3":"c","4":"sc"},"old_growth_spruce_taiga":{"1":"b","2":"b","3":"c","4":"sb"},"pale_garden":{"1":"b","2":"sc","3":"c","4":"sc"},"savanna":{"1":"b","2":"sb","3":"c","4":"sb"},"snowy_taiga":{"1":"sc","2":"c","3":"b","4":"b"},"sparse_jungle":{"1":"c","2":"sbb","3":"c","4":"sbbb"},"swamp":{"1":"c","2":"sb","3":"cb","4":"sb"},"taiga":{"1":"c","2":"b","3":"b","4":"sc"},"windswept_forest":{"1":"b","2":"c","3":"sb","4":"sc"},"wooded_badlands":{"1":"bb","2":"c","3":"sb","4":"sb"}}};
-const CAMP_TABLE = { c: 'chests/abandoned_camp_common_chest', s: 'chests/abandoned_camp_secret_chest', b: 'barrels/abandoned_camp_barrel' };
-// which tent (1-10) and which campsite (1-49) a camp uses: the same random numbers as the game, before the pieces are placed
-function campVariant(ws, x, z) {
-  const r = chunkRand(BigInt(ws), x >> 4, z >> 4), rot = r.nextInt(4), tent = 1 + r.nextInt(10);
-  const pos = Array.from({ length: 49 }, (_, i) => i);
-  for (let i = 49; i > 1; i--) { const j = r.nextInt(i); [pos[i - 1], pos[j]] = [pos[j], pos[i - 1]]; }
-  return { rot, tent, site: 1 + pos[0] };
+// a short "1 secret chest, 2 barrels" from a list of containers
+function campKindsText(cs) {
+  const n = f => cs.filter(f).length, out = [], sec = n(c => /secret/.test(c.table)), bar = n(c => c.block === 'barrel'), ch = cs.length - sec - bar;
+  if (sec) out.push(`${sec} <span>${sec > 1 ? 'secret chests' : 'secret chest'}</span>`);
+  if (ch) out.push(`${ch} <span>${ch > 1 ? 'chests' : 'chest'}</span>`);
+  if (bar) out.push(`${bar} <span>${bar > 1 ? 'barrels' : 'barrel'}</span>`);
+  return out.join(', ') || '<span>nothing</span>';
 }
-// what a campsite holds ('' when its biome is needed and not known); a tent's needs the biome
-const campSiteKinds = (site, biome) => site <= 45 ? CAMP_DATA.camp[site] : ((CAMP_DATA.campBiome[biome] || {})[site - 45] || '');
-// a short "1 secret chest, 2 barrels" from the letters of CAMP_DATA
-function campKindsText(k) {
-  const n = c => [...k].filter(x => x === c).length, out = [];
-  if (n('s')) out.push(`${n('s')} <span>${n('s') > 1 ? 'secret chests' : 'secret chest'}</span>`);
-  if (n('c')) out.push(`${n('c')} <span>${n('c') > 1 ? 'chests' : 'chest'}</span>`);
-  if (n('b')) out.push(`${n('b')} <span>${n('b') > 1 ? 'barrels' : 'barrel'}</span>`);
-  return out.join(', ');
-}
-LOOT_MORE.camp = (ws, x, z, ver, biome) => {
-  const bi = CAMP_BIOMES.indexOf(biome); if (bi < 0 || !verAtLeast(ver, '26.3')) return null;
-  const salt = [, 4, bi], minX = x & ~15, minZ = z & ~15, { rot, tent, site } = campVariant(ws, minX, minZ);
-  const siteKinds = campSiteKinds(site, biome), tentKinds = CAMP_DATA.tent[biome][tent];
-  const [mx, mz] = [[8, 8], [-8, 8], [-8, -8], [8, -8]][rot], tx = minX + mx, tz = minZ + mz;   // tent: around here
-  const [ox, oz] = [[-16, 0], [0, -16], [16, 0], [0, 16]][rot], sx = tx + ox, sz = tz + oz;   // campsite: about one chunk away
-  const chests = [], take = (kinds, cx, cz, where) => { const xr = chunkXoro(ws, cx, cz, salt); for (const k of kinds) chests.push({ x: cx, z: cz, table: CAMP_TABLE[k], seed: xr.nextLongJ(), barrel: k === 'b', secret: k === 's', where, near: true }); };
-  take(tentKinds, tx, tz, 'tent'); take(siteKinds, sx, sz, 'campsite');
-  const bname = biome.replace(/_/g, ' ');   // as the map names it, so it gets translated the same way
-  const info = `<span>Tent</span> ${tent}/10 (<span>${bname}</span>): ${campKindsText(tentKinds)} · <span>Campsite</span> ${site}/49${site > 45 ? ` (<span>${bname}</span>)` : ''}: ${campKindsText(siteKinds)}`;
-  return { info, secret: siteKinds.includes('s'), chests, pieces: [{ t: 0, b0: [tx - 4, 0, tz - 4], b1: [tx + 4, 0, tz + 4] }, { t: 1, b0: [sx - 4, 0, sz - 4], b1: [sx + 4, 0, sz + 4] }] };
+LOOT_MORE.camp = (ws, x, z, ver, biome, built) => {
+  if (!verAtLeast(ver, '26.3')) return null;
+  const C = built || (CAMP_BIOMES.includes(biome) && campBuild(ws, x, z, biome)); if (!C) return null;
+  const tent = C.A.pieces[0], site = C.A.pieces.find(p => /\/camp\//.test(p.name || ''));
+  const inTent = C.conts.filter(c => c.piece === 0), inSite = C.conts.filter(c => site && C.A.pieces[c.piece] === site);
+  const bname = C.biome.replace(/_/g, ' ');   // as the map names it, so it gets translated the same way
+  const info = `<span>Tent</span> ${tent.name.split('_').pop()}/10 (<span>${bname}</span>): ${campKindsText(inTent)}`
+    + (site ? ` · <span>Campsite</span> « ${campSiteName(site.name)} »: ${campKindsText(inSite)}` : '');
+  const P = jigPlanOf('camp', ws, C.A, C.conts);
+  P.pieces.forEach(p => { p.t = /\/tent\//.test(p.t) ? 0 : /\/camp\//.test(p.t) ? 1 : 2; });
+  return { info, secret: C.conts.some(c => /secret/.test(c.table)), ...P };
 };
