@@ -154,8 +154,10 @@ function renderPin() {
   box.innerHTML = `<div class="coords">X ${pin.x} · Z ${pin.z} <span class="sub" style="font-family:var(--f-body)">${DIMS[xDim].name}</span></div>
     <div class="sub">${[pin.label, biome, fmt(Math.hypot(pin.x, pin.z)) + ' from 0, 0'].filter(Boolean).join(' · ')}</div>
     ${shipNote}${gateNote}${wildNote}${basNote}${minorNote}<div class="actions">${copies}${jump}
-      ${xDim !== 1 ? `<button type="button" id="pinFind" title="Search for base spots starting here">Find a base here</button>` : ''}</div>`;
+      ${xDim !== 1 ? `<button type="button" id="pinFind" title="Search for base spots starting here">Find a base here</button>` : ''}
+      ${pin.q && LOOT_KEYS.has(pin.q.key) ? `<button type="button" id="pinPlan" title="Plan from above and what is in each chest (or double-click the structure)">Chests</button>` : ''}</div>`;
   box.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
+  if ($('pinPlan')) $('pinPlan').onclick = () => openPlan(pin.q);
   if ($('pinJump')) $('pinJump').onclick = () => {
     const to = g.key === 'gateway' ? { key: 'gatexit', x: g.dx, z: g.dz, n: g.n, sx: g.x, sz: g.z } : { key: 'gateway', x: g.sx, z: g.sz, n: g.n, dx: g.x, dz: g.z };
     xMap.centerOn(to.x, to.z);

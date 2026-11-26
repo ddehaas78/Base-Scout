@@ -127,6 +127,7 @@ Respecte les règles du serveur : certains interdisent de cracker le seed.
 - En haut du panneau : **Go to** et **Picked point** (coordonnées, notes selon la structure : type de bastion, profondeur d'un fossile, etc.), **Find a base here**. Bouton **XZ** sur la carte.
 - **Itinéraire** : le petit carré sous **XZ** active le mode itinéraire. Chaque clic sur une structure (ou n'importe où) ajoute une étape, un clic sur une étape la retire. Les étapes sont reliées par une ligne jaune, numérotées, avec la longueur de chaque trajet. À gauche, la section **Route** donne les coordonnées de chaque étape, la distance depuis la précédente et le total ; **Best order** garde la première étape et trouve le chemin le plus court par les autres, **Copy** copie la liste, **Clear** l'efface, un clic sur une étape centre la carte dessus. Un itinéraire par dimension, gardé par seed dans le navigateur. Le même bouton existe sur la carte de **Find a base** (la liste s'affiche alors sur la carte, en haut à gauche ; un itinéraire par seed et dimension).
 - En bas de la carte, deux barres toujours visibles : `Picked X, Z : -520, 936 | -65, 117` et `Cursor …`. Coordonnées de l'Overworld en blanc, du Nether en rouge.
+- **Plan et coffres** (temples du désert pour l'instant) : **double-clic** sur la structure, ou bouton **Chests** dans Picked point. Une fenêtre montre le plan vu du dessus avec les vraies textures (tours et porte du bon côté), les 4 coffres numérotés, et le contenu de chaque coffre rangé comme dans le jeu (grille 9 × 3, même emplacement pour chaque objet), avec les livres enchantés et la ligne « Best ». Contenu calculé à partir de Java 1.21.6. La graine de chaque coffre et le contenu suivent xpple/cubiomes (MIT), vérifiés avec ses données de test ; l'emplacement des objets dans le coffre et quel coffre est lequel ne sont **pas encore vérifiés en jeu**.
 
 ---
 
@@ -224,13 +225,16 @@ Pour une modification, il suffit d'ouvrir le fichier concerné (pas tout le site
 | `js/04-maps.js` | Le moteur de carte commun (`MapView` : couches, zoom, déplacement) et le dessin des icônes. |
 | `js/05-findmap.js` | La carte à côté des résultats (cercles, cadres de couleur, point rouge Start). |
 | `js/06-seedmap.js` | L'onglet Seed map (affichage, Picked point, Go to, dimensions). |
+| `js/06a-lootdata.js` | Les tables de butin des coffres, créé par `i18n/loot.py` : ne pas modifier à la main. |
+| `js/06b-loot.js` | Le butin : graine de chaque coffre (générateur du monde), tirage de la table (Random de Java), enchantements, emplacements dans le coffre. |
+| `js/06c-plan.js` | La fenêtre plan et coffres (double-clic sur une structure de la Seed map). |
 | `js/06b-route.js` | L'itinéraire des deux cartes (`makeRoute` : étapes, ligne, distances, Best order). |
 | `js/07-tabs.js` | Onglets et changements de seed. |
 | `js/08-saved-seeds.js` | Saved seeds et `seeds.txt` (lecture, écriture, format). |
 | `js/09-librarian.js` | Onglet Villager, bibliothécaire novice (générateur Xoroshiro, livres, recherche de position). |
 | `js/09a-jobdata.js` | Les échanges de tous les métiers de villageois (données 26.x), créé par `i18n/jobs.py` : ne pas modifier à la main. |
 | `js/09b-levels.js` | Le choix du métier (tout l'onglet Villager le suit), les rerolls Novice des métiers autres que bibliothécaire (à gauche et dans le grand tableau), « Next level-ups » Apprenti à Maître (à droite), enchantements, teintures, potions, ragoûts, recherche de position à partir des échanges vus. |
-| `i18n/` | Les traductions (`ui.py` pour les textes du site, `game.json` pour les noms du jeu) et `jobs.py`, qui crée `js/09a-jobdata.js` à partir des données du jeu. Voir `i18n/README.txt`. |
+| `i18n/` | Les traductions (`ui.py` pour les textes du site, `game.json` pour les noms du jeu) et `jobs.py` / `loot.py`, qui créent `js/09a-jobdata.js` et `js/06a-lootdata.js` à partir des données du jeu. Voir `i18n/README.txt`. |
 | `js/10-boot.js` | Démarrage, sauvegarde au rafraîchissement, lancement du worker. |
 | `worker.js` | Le moteur de recherche (Web Worker) : tuiles en spirale, test de seeds pour Find seeds (`runSeeds`, `checkSpot`), distance transform pour les biomes, score, cartes du Nether et de l'End. |
 | `icons.js` | Les icônes dessinées (`ICON_ART`) et le chargement des textures du jeu (`TEX_FOR`). |
@@ -326,3 +330,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v57 | Seed map et carte de Find a base : itinéraire (carré sous XZ) : clic sur des structures pour les relier, numéros, longueur de chaque trajet, liste des coordonnées, total, Best order (chemin le plus court), Copy, Clear (`js/06b-route.js`) |
 | v58 | Case « Base on land » enlevée : en Overworld la base est toujours sur la terre ferme |
 | v59 | Optimisation : les cartes ont leur propre moteur (une carte ne met plus la recherche en pause, recherche 30 à 50 % plus rapide), biomes calculés seulement aux endroits candidats quand on ne cherche que des structures, carte redessinée une fois par image, textes et traductions plus réécrits s'ils n'ont pas changé, traductions gardées en mémoire, fond des icônes dessiné une seule fois par taille |
+| v60 | Seed map : plan et coffres des temples du désert (double-clic ou bouton « Chests », sauf en mode itinéraire) : plan vu du dessus, 4 coffres, contenu exact de chaque coffre rangé comme dans le jeu, à partir de Java 1.21.6 |
