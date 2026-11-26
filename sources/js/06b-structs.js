@@ -407,7 +407,7 @@ const turn4 = (rot, a, b) => [[a, b], [-b, a], [-a, -b], [b, -a]][rot];
 
 // a structure's plan, or null when this version is not covered
 function lootStructure(key, ws, x, z, ver, biome) {
-  ws = BigInt(ws);
+  ws = BigInt(ws); biome = String(biome || '').toLowerCase().replace(/ /g, '_');   // the map's name ("birch forest") → the game's id
   const minX = x & ~15, minZ = z & ~15, cx = x >> 4, cz = z >> 4;
   const roll = c => { c.items = lootRoll(c.table, ver, c.seed); return c; };
   const plan = o => { o.chests.forEach(roll); return Object.assign({ key, x, z, minX, minZ, pieces: [] }, o); };

@@ -152,6 +152,18 @@ function iconBack(sz, d) {
   BACKS.set(k, b = { c, off: sz / 2 + pad + m });
   return b;
 }
+// igloos with a basement (a zombie villager and a golden apple in the chest): a small golden apple on the icon
+const APPLE = new Image();
+APPLE.onerror = () => { if (!APPLE.dataset.f) { APPLE.dataset.f = 1; APPLE.src = TEX_SOURCES[1] + 'item/golden_apple.png'; } };
+APPLE.onload = () => { if (typeof xMap !== 'undefined') xMap.draw(); if (typeof findMap !== 'undefined') findMap.draw(); };
+APPLE.src = TEX_SOURCES[0] + 'item/golden_apple.png';
+const BASEMENT = new Map();
+function iglooBasement(q) {   // the igloo's own random numbers: turn, then basement (half of them); see js/06b2-structs2.js
+  const seed = parseSeed($('seed').value); if (seed === null || typeof chunkRand === 'undefined') return false;
+  const k = seed + ',' + q.x + ',' + q.z;
+  if (!BASEMENT.has(k)) { if (BASEMENT.size > 5000) BASEMENT.clear(); const r = chunkRand(BigInt(seed), q.x >> 4, q.z >> 4); r.nextInt(4); BASEMENT.set(k, r.nextDouble() < 0.5); }
+  return BASEMENT.get(k);
+}
 function drawIcons(M, keys, sizeFor, tile) {
   const { ctx, cv } = M, d = drawScale();
   const order = ICON_ORDER || (ICON_ORDER = ALL_STRUCTS.slice().sort((a, b) => DRAW_ORDER.indexOf(a.key) - DRAW_ORDER.indexOf(b.key)));
@@ -174,6 +186,7 @@ function drawIcons(M, keys, sizeFor, tile) {
         ctx.fillStyle = 'rgba(14,16,15,.88)'; ctx.fill(); ctx.lineWidth = (ring ? 2.5 : 1.5) * d; ctx.strokeStyle = ring || 'rgba(245,247,244,.9)'; ctx.stroke();
       }
       if (ic) ctx.drawImage(ic.canvas, x - sz/2, y - sz/2, sz, sz);
+      if (s.key === 'igloo' && APPLE.naturalWidth && iglooBasement(q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(APPLE, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
     }
   }
 }

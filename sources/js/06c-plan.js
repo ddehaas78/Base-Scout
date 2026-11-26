@@ -157,7 +157,7 @@ function renderPlan() {
 function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;
   const seed = parseSeed($('seed').value); if (seed === null) { toast('Enter a seed first.'); return true; }
-  planCur = lootStructure(q.key, BigInt(seed), q.x, q.z, VER, q.key === 'mineshaft' ? M.biomeAt(q.x, q.z) : ''); planSel = 0;
+  planCur = lootStructure(q.key, BigInt(seed), q.x, q.z, VER, M.biomeAt(q.x, q.z) || ''); planSel = 0;
   if (!planCur) { toast('No plan for this structure in this version.'); return true; }
   $('planDlg').hidden = false; renderPlan(); $('planClose').focus();
   return true;
