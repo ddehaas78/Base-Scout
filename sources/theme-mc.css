@@ -326,8 +326,6 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .slot img { width: calc(var(--slot, 36px) - 4px); height: calc(var(--slot, 36px) - 4px); image-rendering: pixelated; }
 .slot b { position: absolute; right: 2px; bottom: 0; font: 13px var(--mc); font-weight: normal; color: #fff; text-shadow: 2px 2px 0 #3f3f3f; }
 .slot.glint img { filter: drop-shadow(0 0 2px #b46cff) drop-shadow(0 0 1px #d9a6ff); }
-.pbest { margin-top: 10px; font-size: 12.5px; color: #e0e0e0; font-family: var(--mc); line-height: 1.6; }
-.pbest b { color: #ffff55; font-weight: normal; }
 #planChests .hint { margin: 10px 0 0; }
 /* name tooltip after 1 s on a button or chip (js/13-tooltip.js): the game's item tooltip, dark with a purple edge */
 .mctip { position: fixed; z-index: 200; pointer-events: none; max-width: 320px; padding: 5px 8px 6px; font: 13px/1.35 var(--mc); color: #fff; text-shadow: 2px 2px 0 #3f3f3f;

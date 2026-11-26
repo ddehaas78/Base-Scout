@@ -129,7 +129,7 @@ const PLAN_INFO = {
   stronghold: ['Stronghold', 'Chests are in chest corridors, store rooms and libraries (2 in a tall library). Where a cave cuts through, a chest can be missing or hold something else.'],
   mineshaft: ['Mineshaft', 'Chests are in minecarts along the corridors. Parts in the air, in water or cut by caves are not built, which can change or remove chests.'],
 };
-const LOOT_BEST = /^(diamond|emerald|golden_apple|enchanted_golden_apple|diamond_horse_armor|diamond_nautilus_armor|heart_of_the_sea|ancient_debris|netherite_scrap|gold_block|name_tag|lodestone|music_disc_.*|.*_smithing_template)$/;   // shown in the Best line
+const LOOT_BEST = /^(diamond|emerald|golden_apple|enchanted_golden_apple|diamond_horse_armor|diamond_nautilus_armor|heart_of_the_sea|ancient_debris|netherite_scrap|gold_block|name_tag|lodestone|music_disc_.*|.*_smithing_template)$/;   // rare items: their name is yellow in the tooltip
 // explorer maps lead to the nearest structure of their kind (the game looks from the chest)
 const MAP_TARGET = { buried_treasure_map: 'treasure', abandoned_camp_map: 'camp', buried_ancient_city_map: 'ancient', buried_trial_chambers_map: 'trial',
   buried_mineshaft_map: 'mineshaft', desert_pyramid_map: 'pyramid', jungle_pyramid_map: 'jungle', warm_ocean_ruins_map: 'ruins', woodland_mansion_map: 'mansion' };
@@ -167,11 +167,7 @@ function slotHTML(s, c) {
 function chestHTML(S, k) {
   const c = S.chests[k];
   if (!c.items) return `<p class="hint"><span>Chest contents are worked out from Java</span> ${LOOT_FROM}. <span>Pick a newer version at the top to see them.</span></p>`;
-  const best = c.items.filter(s => s.ench.length || LOOT_BEST.test(LOOT_ITEMS[s.i][0]));
-  const sp = t => `<span>${escH(t)}</span>`;   // one text per span, so each part gets translated
-  const bestTxt = best.map(s => { const it = LOOT_ITEMS[s.i]; return (s.n > 1 ? s.n + ' ' : '') + sp(it[0] === 'book' && s.ench.length ? 'Enchanted Book' : it[1]) + (s.ench.length ? ' (' + s.ench.map(([e, l]) => sp(LOOT_ENCH[e][1] + (LOOT_ENCH[e][2] > 1 ? ' ' + ROMAN[l] : ''))).join(', ') + ')' : ''); });
-  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div>${c.unsure ? '<p class="hint">A tree grows in this chunk before this chest is filled: its contents can differ.</p>' : ''}<div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>
-    ${bestTxt.length ? `<div class="pbest"><b>Best:</b> ${bestTxt.join(', ')}</div>` : ''}`;
+  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div>${c.unsure ? '<p class="hint">A tree grows in this chunk before this chest is filled: its contents can differ.</p>' : ''}<div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>`;
 }
 function renderPlan() {
   const S = planCur; if (!S) return;
