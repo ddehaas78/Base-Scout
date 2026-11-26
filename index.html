@@ -2899,15 +2899,29 @@ function crackStatus() {
 }
 $('crack').onclick = () => { if (crack && crack.running) { stopSeeds(); crack.running = false; crackStatus(); } else startCrack(); };
 // ---------- maps ----------
-// Each map loads in layers: every pan or zoom asks for the area on screen at a detail level that fits,
-// so zooming out shows more world instead of black edges. One request at a time per map.
-const SCALES = [4, 16, 64, 256];
+// Each map loads in square tiles (TILE x TILE cells) at a detail level that fits the zoom: the tiles on screen are asked
+// for nearest to the middle first, from a few map engines working side by side (MAPQ), and kept, so going back is instant.
+// Coarser tiles stay underneath while the finer ones arrive, so zooming never shows black.
+const SCALES = [4, 16, 64, 256], TILE = 128;
 const maps = {};
+// the map engines: idle ones take the next tile of the map on screen
+const MAPQ = { workers: [], free: [], ready: 0, main: false };
+function mapPump() {
+  while (MAPQ.free.length) {
+    let job = null;
+    for (const M of Object.values(maps)) if (M.queue.length && M.active()) { job = M.queue.shift(); break; }
+    if (!job) return;
+    const wi = MAPQ.free.pop();
+    if (wi < 0 && MAPQ.ready) continue;   // the map engines are up: the main engine goes back to searches only
+    const w = wi < 0 ? worker : MAPQ.workers[wi];
+    job.msg.tag += ':' + wi; w.postMessage(job.msg);
+  }
+}
 function MapView(o) {
   const cv = o.canvas, ctx = cv.getContext('2d');
-  const M = { name: o.name, cv, ctx, layers: [], structs: {}, view: { s: 0.25, ox: 0, oy: 0 }, gen: 0, busy: 0, again: false, n: 0, req: 0 };
+  const M = { name: o.name, cv, ctx, layers: [], structs: {}, view: { s: 0.25, ox: 0, oy: 0 }, gen: 0, n: 0, tiles: new Map(), queue: [], active: () => o.active() };
   maps[o.name] = M;
-  M.reset = () => { M.layers = []; M.structs = {}; M.gen++; M.busy = 0; M.again = false; };
+  M.reset = () => { M.layers = []; M.structs = {}; M.gen++; M.tiles.clear(); M.queue = []; };
   M.size = () => {
     const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1;
     const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
@@ -2922,52 +2936,71 @@ function MapView(o) {
   M.fitTo = (x, z, half) => { const s = Math.min(cv.width, cv.height) / (2 * half); M.view = { s, ox: x - cv.width / 2 / s, oy: z - cv.height / 2 / s }; };
   M.centerOn = (x, z) => { M.view.ox = x - cv.width / 2 / M.view.s; M.view.oy = z - cv.height / 2 / M.view.s; };
   M.span = () => Math.max(cv.width, cv.height) / M.view.s;
-  M.request = force => {
+  M.request = () => {
     const seed = o.seed();
     if (seed == null || !o.active() || cv.width < 4 || !ready) return;
-    if (M.busy) { M.again = true; return; }
+    if (!MAPQ.ready && !MAPQ.main) { MAPQ.main = true; MAPQ.free.push(-1); }   // no map engine ready yet: the main one helps
     const v = M.view, x0 = v.ox, z0 = v.oy, x1 = v.ox + cv.width / v.s, z1 = v.oy + cv.height / v.s;
-    const span = Math.max(x1 - x0, z1 - z0);
-    let S = SCALES.find(q => span * 1.3 / q <= 700) || 256;
-    if (!M.layers.length) {   // empty map (new seed): a rough pass first so something shows at once, the detailed one follows
-      const rough = SCALES[Math.min(SCALES.indexOf(S) + 1, SCALES.length - 1)];
-      if (rough > S) { S = rough; M.again = true; }
-    }
-    const keys = o.keys(S, span), sig = keys.join(',') + '|' + JSON.stringify(o.ver());
-    if (!force && M.layers.some(L => L.scale <= S && L.sig === sig && L.bx0 <= x0 && L.bz0 <= z0 && L.bx1 >= x1 && L.bz1 >= z1)) return;
-    M.busy = ++M.req;
-    (mapReady ? mapWorker : worker).postMessage({ type: 'area', seed, ver: o.ver(), dim: o.dim ? o.dim() : 0, tag: M.name + ':' + M.gen + ':' + M.req, x: Math.round((x0 + x1) / 2), z: Math.round((z0 + z1) / 2),
-      scale: S, halfX: Math.round((x1 - x0) * 0.65), halfZ: Math.round((z1 - z0) * 0.65), keys, sig });
+    const span = Math.max(x1 - x0, z1 - z0), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+    const S = SCALES.find(q => span * 1.3 / q <= 700) || 256, dim = o.dim ? o.dim() : 0;
+    const keys = o.keys(S, span), sig = keys.join(',') + '|' + JSON.stringify(o.ver()) + '|' + dim, ver = o.ver();
+    const jobs = [];
+    const plan = (sc, pad, first) => {   // the tiles of this scale over the screen (and a margin), nearest to the middle first
+      const tw = TILE * sc, list = [];
+      const a0 = Math.floor((x0 - pad) / tw), a1 = Math.floor((x1 + pad) / tw), b0 = Math.floor((z0 - pad) / tw), b1 = Math.floor((z1 + pad) / tw);
+      for (let tx = a0; tx <= a1; tx++) for (let tz = b0; tz <= b1; tz++) {
+        const key = sc + ':' + tx + ':' + tz + ':' + sig;
+        if (M.tiles.has(key)) continue;
+        const cx = (tx + 0.5) * tw, cz = (tz + 0.5) * tw;
+        list.push({ key, d: Math.hypot(cx - mx, cz - mz) - (first ? 1e12 : 0), msg: { type: 'area', seed, ver, dim, tag: M.name + ':' + M.gen + ':' + key,
+          x: cx, z: cz, scale: sc, halfX: tw / 2, halfZ: tw / 2, keys, sig } });
+      }
+      return list;
+    };
+    // nothing at all under the middle yet (new seed, far jump): a coarse pass first, so something shows at once
+    const covered = M.layers.some(L => L.bx0 <= mx && L.bz0 <= mz && L.bx1 > mx && L.bz1 > mz);
+    if (!covered && S < 256) jobs.push(...plan(SCALES[SCALES.indexOf(S) + 1], 0, true));
+    jobs.push(...plan(S, span * 0.15, false));
+    jobs.sort((a, b) => a.d - b.d);
+    for (const j of jobs) M.tiles.set(j.key, 'queued');
+    for (const j of M.queue) if (!jobs.includes(j)) M.tiles.delete(j.key);   // tiles no longer wanted: dropped before they start
+    M.queue = jobs;
+    mapPump();
   };
   M.onArea = m => {
-    const [, gen, req] = String(m.tag).split(':').map(Number);
-    if (req === M.busy) M.busy = 0;
+    const parts = String(m.tag).split(':'), gen = +parts[1], wi = +parts[parts.length - 1], key = parts.slice(2, -1).join(':');
+    if (!(wi < 0 && MAPQ.ready)) MAPQ.free.push(wi);
     if (gen === M.gen) {
       const c = document.createElement('canvas'); c.width = m.W; c.height = m.H;
       const g = c.getContext('2d'), d = g.createImageData(m.W, m.H);
       const lut = paletteFor32(m.dim || 0), px = new Uint32Array(d.data.buffer), grid = m.grid;
       for (let k = 0, n = m.W * m.H; k < n; k++) { const b = grid[k]; px[k] = lut[b < 0 ? 256 : b]; }
       g.putImageData(d, 0, 0);
-      M.layers.push({ scale: m.scale, cx0: m.cx0, cz0: m.cz0, W: m.W, H: m.H, grid: m.grid, img: c, sig: m.sig, n: ++M.n,
-        bx0: m.cx0 * m.scale, bz0: m.cz0 * m.scale, bx1: (m.cx0 + m.W) * m.scale, bz1: (m.cz0 + m.H) * m.scale });
-      if (M.layers.length > 12) {   // forget the oldest detailed layer first
-        const old = M.layers.filter(L => L.scale <= 16).sort((a, b) => a.n - b.n)[0] || M.layers.slice().sort((a, b) => a.n - b.n)[0];
-        M.layers.splice(M.layers.indexOf(old), 1);
+      const L = { scale: m.scale, cx0: m.cx0, cz0: m.cz0, W: m.W, H: m.H, grid: m.grid, img: c, sig: m.sig, n: ++M.n, key,
+        bx0: m.cx0 * m.scale, bz0: m.cz0 * m.scale, bx1: (m.cx0 + m.W) * m.scale, bz1: (m.cz0 + m.H) * m.scale };
+      M.layers.push(L); M.tiles.set(key, L);
+      if (M.layers.length > 250) {   // forget the tiles seen longest ago
+        const old = M.layers.slice().sort((a, b) => a.n - b.n).slice(0, M.layers.length - 250);
+        for (const o2 of old) { M.layers.splice(M.layers.indexOf(o2), 1); M.tiles.delete(o2.key); }
       }
       M.layers.sort((a, b) => b.scale - a.scale || a.n - b.n);   // coarse first, fine on top
       for (const [k, list] of Object.entries(m.structs)) {
         const have = M.structs[k] || (M.structs[k] = new Map());
         for (const q of list) have.set(q.x + ',' + q.z, q);
       }
-      M.draw();
+      M.changedDraw();
       if (o.loaded) o.loaded(M);
     }
-    if (!M.busy && M.again) { M.again = false; M.request(false); }
+    mapPump();
   };
   M.draw = () => {
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0a0d0b'; ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.imageSmoothingEnabled = false;
-    for (const L of M.layers) { const [ix, iy] = M.scr(L.bx0, L.bz0); ctx.drawImage(L.img, ix, iy, (L.bx1 - L.bx0) * M.view.s, (L.bz1 - L.bz0) * M.view.s); }
+    const [wx0, wz0] = M.toWorld(0, 0), [wx1, wz1] = M.toWorld(cv.width, cv.height);
+    for (const L of M.layers) {
+      if (L.bx1 < wx0 || L.bx0 > wx1 || L.bz1 < wz0 || L.bz0 > wz1) continue;   // off screen
+      const [ix, iy] = M.scr(L.bx0, L.bz0); ctx.drawImage(L.img, ix, iy, (L.bx1 - L.bx0) * M.view.s, (L.bz1 - L.bz0) * M.view.s);
+    }
     o.overlay(M);
   };
   M.biomeAt = (x, z) => {
@@ -2978,9 +3011,10 @@ function MapView(o) {
     return id < 0 ? 'void' : names[id];
   };
   let viewT, frame = 0;   // pan and zoom events come faster than the screen: draw once per frame
-  M.changed = () => {
-    if (!frame) frame = requestAnimationFrame(() => { frame = 0; M.draw(); });
-    clearTimeout(viewT); viewT = setTimeout(() => M.request(false), 200);
+  M.changedDraw = () => { if (!frame) frame = requestAnimationFrame(() => { frame = 0; M.draw(); }); };
+  M.changed = () => {   // tiles are small: ask for them soon after the view moves, the ones no longer wanted are dropped
+    M.changedDraw();
+    clearTimeout(viewT); viewT = setTimeout(() => M.request(), 60);
   };
   M.zoomAt = (sx, sy, f) => {
     const ns = Math.max(Math.max(cv.width, cv.height) / (typeof o.maxSpan === 'function' ? o.maxSpan() : o.maxSpan), Math.min(12, M.view.s * f)), [wx, wz] = M.toWorld(sx, sy);
@@ -5866,12 +5900,16 @@ try {
   new Response(new Blob([zipped]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
     .then(buf => {
       wasmCopy = buf.slice(0);
-      // the maps get their own engine: drawing a map never pauses a running search, and the other way round
-      try {
-        mapWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-        mapWorker.onmessage = ev => { const m = ev.data; if (m.type === 'ready') mapReady = true; else if (m.type === 'area') onMsg(m); else if (m.type === 'pts') onPts(m); else if (m.type === 'error') console.error(m.message); };
-        const mb = buf.slice(0); mapWorker.postMessage({ type: 'init', wasm: mb }, [mb]);
-      } catch (err) { console.error(err); mapWorker = null; }
+      // the maps get their own engines (a few, working side by side on tiles): drawing a map never pauses a search
+      const nMap = Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 2) - 1));
+      for (let i = 0; i < nMap; i++) try {
+        const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        w.onmessage = ev => { const m = ev.data;
+          if (m.type === 'ready') { MAPQ.ready++; MAPQ.free.push(i); if (i === 0) { mapWorker = w; mapReady = true; } mapPump(); }
+          else if (m.type === 'area') onMsg(m); else if (m.type === 'pts') onPts(m); else if (m.type === 'error') console.error(m.message); };
+        MAPQ.workers[i] = w;
+        const mb = buf.slice(0); w.postMessage({ type: 'init', wasm: mb }, [mb]);
+      } catch (err) { console.error(err); }
       worker.postMessage({ type: 'init', wasm: buf }, [buf]);
     })
     .catch(err => { console.error(err); $('stext').textContent = 'This browser could not unpack the search engine. Use a recent Chrome, Edge or Firefox.'; });

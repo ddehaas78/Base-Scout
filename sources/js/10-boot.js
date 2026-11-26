@@ -112,12 +112,16 @@ try {
   new Response(new Blob([zipped]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
     .then(buf => {
       wasmCopy = buf.slice(0);
-      // the maps get their own engine: drawing a map never pauses a running search, and the other way round
-      try {
-        mapWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
-        mapWorker.onmessage = ev => { const m = ev.data; if (m.type === 'ready') mapReady = true; else if (m.type === 'area') onMsg(m); else if (m.type === 'pts') onPts(m); else if (m.type === 'error') console.error(m.message); };
-        const mb = buf.slice(0); mapWorker.postMessage({ type: 'init', wasm: mb }, [mb]);
-      } catch (err) { console.error(err); mapWorker = null; }
+      // the maps get their own engines (a few, working side by side on tiles): drawing a map never pauses a search
+      const nMap = Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 2) - 1));
+      for (let i = 0; i < nMap; i++) try {
+        const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        w.onmessage = ev => { const m = ev.data;
+          if (m.type === 'ready') { MAPQ.ready++; MAPQ.free.push(i); if (i === 0) { mapWorker = w; mapReady = true; } mapPump(); }
+          else if (m.type === 'area') onMsg(m); else if (m.type === 'pts') onPts(m); else if (m.type === 'error') console.error(m.message); };
+        MAPQ.workers[i] = w;
+        const mb = buf.slice(0); w.postMessage({ type: 'init', wasm: mb }, [mb]);
+      } catch (err) { console.error(err); }
       worker.postMessage({ type: 'init', wasm: buf }, [buf]);
     })
     .catch(err => { console.error(err); $('stext').textContent = 'This browser could not unpack the search engine. Use a recent Chrome, Edge or Firefox.'; });
