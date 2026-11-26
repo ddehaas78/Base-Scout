@@ -189,7 +189,7 @@
           <h2>Villager</h2>
           <div class="uprow jobpick"><label class="fld upjob"><span>Job</span><select id="upJob" aria-label="Villager job"></select></label>
             <label class="fld upvar" id="upVarL" hidden><span>Villager type</span><select id="upVar" aria-label="Villager type"></select></label></div>
-          <p class="hint upcheck" id="jobCheck" hidden>Not checked in game yet for this job: compare one level-up with the list before you rely on it.</p>
+          <p class="hint upcheck" id="jobCheck" hidden>Not checked in game yet for this job: compare one reroll with the list before you rely on it.</p>
         </div>
         <div class="sec">
           <h2>Where are you in the list?</h2>
@@ -248,35 +248,6 @@
           <span class="libsp"></span>
         </div>
         <div class="libtable" id="libTableBox"><table id="libTable"><thead><tr><th>Roll</th><th title="How many rerolls from now, counting the next one as 1">Rerolls</th><th id="libTh1">Slot 1</th><th class="thp">Price</th><th id="libTh2">Slot 2</th></tr></thead><tbody id="libRows"></tbody></table><div id="libMore"></div></div>
-        <div class="libup" id="libUp">
-          <div class="uphead"><h2>Next level-ups</h2>
-            <div class="dimseg" id="upseg" role="group" aria-label="Villager level">
-              <button type="button" data-up="2" aria-pressed="true">Apprentice</button><button type="button" data-up="3" aria-pressed="false">Journeyman</button><button type="button" data-up="4" aria-pressed="false">Expert</button><button type="button" data-up="5" aria-pressed="false">Master</button>
-            </div></div>
-          <div id="upMain">
-            <p class="hint uphow">Each time any villager of this job in the world reaches this level, he takes the next level-up from this list. A villager's trades are only picked when he gets the level, not when you lock him.</p>
-            <div class="upnow" id="upNow">
-              <div class="upnowh">The next villager of this job to reach this level will get:</div>
-              <div class="upoffers" id="upNowOffers"></div>
-              <div class="upnowbtns">
-                <button type="button" class="go" id="upInc" title="A villager of this job just reached this level somewhere: move the list on by one">A villager reached this level</button>
-                <button type="button" id="upUndo" title="Go back one level-up">Undo</button>
-                <button type="button" id="upFind">I don't know where I am</button></div>
-              <p class="hint uptip">Not what you want? First level up another villager of this job, one you don't need: yours will then get the line after.</p>
-              <div class="uplast" id="upLast"></div>
-            </div>
-            <div class="uppos"><span>Level-ups already done in this world:</span>
-              <span class="mcnum"><button type="button" class="mcstep" data-for="upPosIn" data-step="-1" aria-label="One less">-</button><input type="number" id="upPosIn" min="0" step="1" aria-label="Next level-up number"><button type="button" class="mcstep" data-for="upPosIn" data-step="1" aria-label="One more">+</button></span></div>
-            <div id="upFindBox" class="libloc" hidden>
-              <p class="hint">Enter the new trades a villager got when he reached this level, oldest level-up first. Slot 1 is the top one of the new trades. The price is optional.</p>
-              <div id="upObs"></div>
-              <div class="row2"><button type="button" id="upObsAdd">+ Add the next level-up</button><button type="button" class="go" id="upObsGo" style="min-width:0">Find my place</button></div>
-              <div id="upRes"></div>
-            </div>
-            <div class="upwant" id="upWantBox"></div>
-            <div class="libtable" id="upTableBox"><table id="upTable"><thead><tr id="upHead"></tr></thead><tbody id="upRows"></tbody></table><div id="upMore"></div></div>
-          </div>
-        </div>
       </div>
     </div>
   </section>

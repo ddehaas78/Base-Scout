@@ -197,79 +197,15 @@ function renderJobMain() {
   if ($('libMoreB')) $('libMoreB').onclick = () => { jobShown += 200; renderLib(); };
 }
 
-// ---- right side: the level-ups (levels 2 to 5) ----
-function renderUp() {
-  const seed = parseSeed($('seed').value), okVer = inVer('lib');
-  document.querySelectorAll('#upseg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.up === upLevel));
-  const L = JOB_DATA[upJob].levels[upLevel];
-  $('upNow').hidden = seed === null || !okVer;
-  if (seed === null || !okVer) {
-    $('upWantBox').innerHTML = `<p class="hint" style="margin:0">${seed === null ? 'Enter your world seed at the top.' : 'Pick Java 26.1 or newer at the top.'}</p>`;
-    $('upRows').innerHTML = ''; $('upMore').innerHTML = ''; return;
-  }
-  const pos = upGetPos(seed), D = jobData(seed, upJob, upLevel, upVariant);
-  $('upPosIn').value = pos;
-  jobEnsure(D, pos + Math.max(1500, upShown + 50));
-  const lib = upJob === 'librarian', booksLeft = lib && $('libLeft').checked;
-  const order = r => booksLeft && r.length > 1 && r[0].book === undefined && r[1].book !== undefined ? [r[1], r[0], ...r.slice(2)] : r.slice();
-  // the big card: what the next villager to reach this level gets, and what the last one got
-  $('upNowOffers').innerHTML = order(D.rolls[pos]).map(o => `<div class="upoffer${jobWanted(o) ? ' want' : ''}">${jobOfferHtml(o, L.pool)}</div>`).join('');
-  $('upNow').classList.toggle('want', D.rolls[pos].some(jobWanted));
-  $('upUndo').hidden = pos === 0;
-  $('upLast').innerHTML = pos > 0 ? `<span>The last one got:</span> ${order(D.rolls[pos - 1]).map(o => jobOfferHtml(o, L.pool)).join('<span class="sep">·</span>')}` : '';
-  // librarian: the nearest level-up with each wanted book, and how many other villagers have to level up first
-  if (lib && upLevel < 5) {
-    $('upWantBox').hidden = false;
-    $('upWantBox').innerHTML = (libWanted.length ? '<h3>Wanted books</h3>' : '') + (libWanted.map(w => {
-      let first = null;
-      for (let i = pos; i < D.rolls.length && !first; i++) for (const o of D.rolls[i]) if (o.book !== undefined && o.book === w.book && o.level >= w.min && o.p <= w.max) { first = { i, o }; break; }
-      const title = `${libBookName(w.book)}${w.min > 1 ? ' ' + ROMAN[w.min] + '+' : ''}`;
-      if (!first) return `<div class="upw"><b>${escH(title)}</b> <span>not in the next</span> <span>${fmt(D.rolls.length - pos)}</span></div>`;
-      const n = libRerolls(first.i, pos);
-      return `<div class="upw${n === 1 ? ' good' : ''}"><b>${escH(libName(libCode(first.o.book, first.o.level)))}</b> <span class="em">${emerald()}${first.o.p}</span>
-        ${n === 1 ? '<span>next level-up</span>' : `<span>in</span> <span class="upn">${fmt(n)}</span> <span>level-ups</span> <span class="upskip"><span class="sep">·</span><span class="upn">${fmt(n - 1)}</span> <span>others to level up first</span></span>`}</div>`;
-    }).join('') || '<p class="hint" style="margin:0">Add a book you want on the left.</p>');
-  } else { $('upWantBox').hidden = true; $('upWantBox').innerHTML = ''; }
-  // the list: the next level-up first, then the ones after it
-  const cols = Math.max(2, L.amt), rows = [];
-  const booksOnly = lib && $('libBooks').checked, wantOnly = lib && $('libOnlyWant').checked;
-  $('upHead').innerHTML = `<th title="The next villager of this job to reach this level gets the first line, the one after him the 2nd, and so on">Order</th>` + Array.from({ length: cols }, (_, k) => `<th>${booksLeft && k === 0 ? 'Book' : booksLeft && k === 1 ? 'Other' : 'Trade ' + (k + 1)}</th>`).join('');
-  for (let i = pos; i < D.rolls.length && rows.length < upShown; i++) {
-    const r = order(D.rolls[i]), want = r.some(jobWanted);
-    if (booksOnly && !r.some(o => o.book !== undefined)) continue;
-    if (wantOnly && !want) continue;
-    rows.push(`<tr class="${want ? 'want' : ''}${i === pos ? ' now' : ''}"><td class="num">${i === pos ? '<span class="upnext">Next</span>' : upOrdinal(i - pos + 1)}</td>`
-      + Array.from({ length: cols }, (_, k) => `<td>${r[k] ? jobOfferHtml(r[k], L.pool) : ''}</td>`).join('') + '</tr>');
-  }
-  $('upRows').innerHTML = rows.join('') || `<tr><td colspan="${cols + 1}" class="hint">Nothing like that in the level-ups worked out so far.</td></tr>`;
-  $('upMore').innerHTML = rows.length >= upShown ? '<button type="button" id="upMoreB">Show 100 more</button>' : '';
-  if ($('upMoreB')) $('upMoreB').onclick = () => { upShown += 100; renderUp(); };
-}
-const upReset = () => { upShown = 100; UP.obs = null; $('upFindBox').hidden = true; $('upRes').innerHTML = ''; upSaveUi(); renderUp(); };
-document.querySelectorAll('#upseg button').forEach(b => b.onclick = () => { upLevel = +b.dataset.up; upReset(); });
-const jobChanged = () => { upShown = 100; jobShown = 200; UP.obs = null; MAIN.obs = null; jobMode = 'known'; $('upFindBox').hidden = true; $('upRes').innerHTML = ''; $('jobLocRes').innerHTML = ''; upSaveUi(); renderLib(); };
+const jobChanged = () => { jobShown = 200; MAIN.obs = null; jobMode = 'known'; $('jobLocRes').innerHTML = ''; upSaveUi(); renderLib(); };
 $('upJob').onchange = () => { upJob = $('upJob').value; jobChanged(); };
 $('upVar').onchange = () => { upVariant = +$('upVar').value; jobChanged(); };
-$('upPosIn').onchange = () => { const v = Math.floor(+$('upPosIn').value); if (v >= 0) { upSetPos(parseSeed($('seed').value), v); renderUp(); } };
-$('upInc').onclick = () => { const seed = parseSeed($('seed').value); upSetPos(seed, upGetPos(seed) + 1); renderUp(); };
-$('upUndo').onclick = () => { const seed = parseSeed($('seed').value), p = upGetPos(seed); if (p > 0) { upSetPos(seed, p - 1); renderUp(); } };
-// 2nd, 3rd… in the page's language (written straight in it, so the translation layer leaves it alone)
-function upOrdinal(n) {
-  const lang = typeof uiLang === 'string' ? uiLang : 'en';
-  if (lang === 'en') return n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
-  return n + ({ fr: 'e', es: '.º', de: '.', it: '°', pt: '.º', pl: '.', nl: 'e' }[lang] || '');
-}
-$('upFind').onclick = () => {
-  const open = $('upFindBox').hidden; $('upFindBox').hidden = !open;
-  if (open && !UP.obs) { UP.obs = [obsEmpty(UP)]; renderObs(UP); }
-};
 // the whole tab follows the job: the librarian keeps its own table; other jobs use the generic one
 const _renderLibMain = renderLib;
 renderLib = function () {
   renderJobPick();
   if (upJob === 'librarian') { if ($('libTable').tHead.innerHTML !== LIB_THEAD) $('libTable').tHead.innerHTML = LIB_THEAD; _renderLibMain(); }
   else renderJobMain();
-  renderUp();
 };
 // the left controls, for jobs other than librarian
 document.querySelectorAll('input[name=libmode]').forEach(r => { const libH = r.onchange; r.onchange = () => {
@@ -281,9 +217,7 @@ document.querySelectorAll('input[name=libmode]').forEach(r => { const libH = r.o
   const v = Math.floor(+$('libPosIn').value); if (v >= 0) { posSet(parseSeed($('seed').value), upJob, 1, v); jobMode = 'known'; renderLib(); }
 }; }
 
-// ---- finding where you are from the trades you see (left: rerolls of level 1, right: level-ups) ----
-const UP = { obs: null, max: 50000, busy: false, el: 'upObs', res: 'upRes', lv: () => upLevel, row: 'Level-up',
-  done: () => { $('upFindBox').hidden = true; renderUp(); toast('Found it. The list now starts at the next level-up.'); } };
+// ---- finding where you are from the trades you see (rerolls of level 1) ----
 const MAIN = { obs: null, max: 50000, busy: false, el: 'jobObs', res: 'jobLocRes', lv: () => 1, row: 'Roll',
   done: () => { jobMode = 'known'; renderLib(); toast('Found you. The list now starts at your next reroll.'); } };
 const obsEmpty = C => Array.from({ length: Math.min(JOB_DATA[upJob].levels[C.lv()].amt, 2) }, () => ({ t: null, book: LIB_IDX.mending, level: 1, price: '' }));
@@ -310,8 +244,6 @@ function renderObs(C) {
   });
   $(C.el).querySelectorAll('[data-del]').forEach(b => b.onclick = () => { C.obs.splice(+b.dataset.del, 1); renderObs(C); });
 }
-$('upObsAdd').onclick = () => { UP.obs.push(obsEmpty(UP)); renderObs(UP); };
-$('upObsGo').onclick = () => obsLocate(UP, false);
 $('jobObsAdd').onclick = () => { MAIN.obs.push(obsEmpty(MAIN)); renderObs(MAIN); };
 $('jobObsGo').onclick = () => obsLocate(MAIN, false);
 async function obsLocate(C, further) {

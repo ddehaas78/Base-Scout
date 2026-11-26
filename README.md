@@ -4,7 +4,7 @@ Un site (un seul fichier HTML, sans serveur) pour **Minecraft Java** avec 3 ongl
 
 1. **Seed map** : la carte du seed, comme Chunkbase, pour l'Overworld, le Nether et l'End ;
 2. **Spot finder** (avant « Find a base ») : trouve le meilleur endroit, pour une base ou autre chose, sur un seed, selon les structures et les biomes que tu veux autour ;
-3. **Villager** : prédit les offres des villageois de tous les métiers (Java 26.1 et plus) : les rerolls du niveau Novice (par exemple dans combien de rerolls un bibliothécaire propose Mending) et les échanges reçus à chaque montée de niveau.
+3. **Villager** : prédit les offres des villageois de tous les métiers (Java 26.1 et plus) : les rerolls du niveau Novice (par exemple dans combien de rerolls un bibliothécaire propose Mending) (les montées de niveau ne sont plus prédites : sur un serveur, d'autres joueurs font monter des villageois et la liste devient trop aléatoire).
 
 Tout tourne dans le navigateur. La génération du monde vient de **cubiomes** (la bibliothèque C utilisée par les outils de seeds), compilée en WebAssembly et intégrée dans le fichier, avec des corrections pour les versions après 1.21.4 (voir **Versions**).
 
@@ -142,11 +142,6 @@ En 26.1 et plus, les offres des villageois viennent de suites fixes, déterminé
 - **Your librarian / Your villager** : ce qu'il devrait montrer maintenant et au prochain reroll. Boutons **I rerolled, that's what came out** (+1), **Something else came out** (retrouver la position), **Undo**.
 - **Wanted books** (bibliothécaire) : Mending par défaut. On ajoute d'autres livres avec un niveau minimum et un prix maximum. Une carte par livre : dans combien de rerolls, roll, prix, slot, et le moins cher des 300 prochains.
 - **Tableau** des rolls à venir : pour le bibliothécaire, livre, prix et autre offre, livres voulus en surbrillance, filtres *Books only* / *Wanted books only* / *Books on the left* ; pour les autres métiers, les 2 offres (ce qu'on donne → ce qu'on reçoit), avec les enchantements, couleurs du cuir, effets des flèches et des ragoûts.
-- **Next level-ups** (à droite) : Apprenti, Compagnon, Expert, Maître. Tous les villageois d'un métier partagent une liste par niveau : chacun qui atteint le niveau, n'importe où dans le monde, prend la ligne suivante. Les offres d'un villageois ne sont choisies qu'au moment où il prend le niveau, pas quand on le bloque.
-  - En haut, une grande carte : **ce que recevra le prochain villageois** qui atteint ce niveau (les 2 offres en grand, en vert si un livre voulu est dedans), avec **A villager reached this level** (+1), **Undo** et **I don't know where I am** (retrouver la position avec les offres reçues). Dessous : ce que le dernier a reçu, et l'astuce : si la ligne ne plaît pas, faire monter d'abord un villageois dont on n'a pas besoin.
-  - **Level-ups already done in this world** : le nombre de montées déjà faites à ce niveau (la position).
-  - **Wanted books** (bibliothécaire) : « Mending 24 dans 105 montées · 104 autres à faire monter avant ».
-  - Le tableau : colonne **Order** (Next, 2nd, 3rd…, dans la langue du site), puis les offres.
 - « Rerolls » compte le prochain reroll comme 1. Un roll = casser et reposer le bloc de métier, puis ouvrir le menu.
 - Ne pas commercer avant d'avoir la bonne offre : après un échange, les offres sont figées. Sur un serveur, les autres joueurs font avancer les mêmes suites. Le prix en jeu peut varier (réductions, demande). Expérience *Trade Rebalance* désactivée, pas Bedrock.
 
@@ -193,7 +188,7 @@ Charger un seed remet le seed, la version, les cercles (en Nether s'ils contienn
 ## Mise en page
 
 - L'interface est affichée à **80 %** (comme un zoom du navigateur à 80 %). Pour changer : `--ui: 0.8;` en haut de `sources/style.css` (1 = 100 %). Sur téléphone, elle reste à 100 %.
-- Sur ordinateur, la page **tient dans la fenêtre** ; les panneaux et listes défilent chacun de leur côté. À partir de 1250 px, carte et résultats sont côte à côte. Dans l'onglet Villager, à partir de 1200 px, « Next level-ups » est à droite du tableau ; en dessous, il passe sous le tableau.
+- Sur ordinateur, la page **tient dans la fenêtre** ; les panneaux et listes défilent chacun de leur côté. À partir de 1250 px, carte et résultats sont côte à côte.
 - Sur téléphone ou fenêtre étroite, la page défile normalement.
 
 ---
@@ -239,7 +234,7 @@ Pour une modification, il suffit d'ouvrir le fichier concerné (pas tout le site
 | `js/08-saved-seeds.js` | Saved seeds et `seeds.txt` (lecture, écriture, format). |
 | `js/09-librarian.js` | Onglet Villager, bibliothécaire novice (générateur Xoroshiro, livres, recherche de position). |
 | `js/09a-jobdata.js` | Les échanges de tous les métiers de villageois (données 26.x), créé par `i18n/jobs.py` : ne pas modifier à la main. |
-| `js/09b-levels.js` | Le choix du métier (tout l'onglet Villager le suit), les rerolls Novice des métiers autres que bibliothécaire (à gauche et dans le grand tableau), « Next level-ups » Apprenti à Maître (à droite), enchantements, teintures, potions, ragoûts, recherche de position à partir des échanges vus. |
+| `js/09b-levels.js` | Le choix du métier (tout l'onglet Villager le suit), les rerolls Novice des métiers autres que bibliothécaire (à gauche et dans le grand tableau), enchantements, teintures, potions, ragoûts, recherche de position à partir des échanges vus. |
 | `i18n/` | Les traductions (`ui.py` pour les textes du site, `game.json` pour les noms du jeu) et `jobs.py` / `loot.py`, qui créent `js/09a-jobdata.js` et `js/06a-lootdata.js` à partir des données du jeu. Voir `i18n/README.txt`. |
 | `js/10-boot.js` | Démarrage, sauvegarde au rafraîchissement, lancement du worker. |
 | `worker.js` | Le moteur de recherche (Web Worker) : tuiles en spirale, test de seeds pour Find seeds (`runSeeds`, `checkSpot`), distance transform pour les biomes, score, cartes du Nether et de l'End. |
@@ -346,3 +341,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v67 | Bulles d'aide après 0,33 s au lieu de 1 s ; dans les coffres, passer la souris sur un objet montre tout de suite une bulle comme dans le jeu : nom (bleu clair si enchanté, jaune si rare), enchantements, effet de la potion ou du ragoût suspect, son de la corne de chèvre, nombre ; pour les cartes d'exploration, la structure vers laquelle elle mène et ses coordonnées probables (la plus proche parmi celles chargées sur les cartes) |
 | v68 | Fenêtre des plans sans barre de défilement : le plan prend la place qui reste, le coffre garde sa taille, les cases rapetissent sur petit écran, le plan suit la taille de la fenêtre ; dans les coffres, les blocs sont dessinés en 3D comme dans l'inventaire du jeu (lit de paille, TNT, citrouille, blocs d'or…) et les objets récents (cuivre, lances, cartes d'exploration, armures de nautile, coussin) ont leur vraie icône (`js/06a2-looticons.js`, fait par `i18n/loot_icons.py` à partir des modèles 26.3) |
 | v69 | Nouveau moteur `js/06d-jigsaw.js` : assemble les structures « jigsaw » pièce par pièce comme le jeu (JigsawPlacement, mêmes nombres aléatoires, même ordre). **Bastions** : tous les coffres de chaque type (trésor, logements, écuries, pont), avec leur hauteur Y. **Cités antiques** : plan et tous les coffres (double-clic). **Campements abandonnés** : vrai modèle de tente et de campement (l'ancien calcul sautait un tirage et se trompait souvent de campement), coffres à leur X et Z exacts, biome exact demandé au moteur de biomes au milieu de la tente (la carte était trop grossière : un campement de forêt pris pour un de forêt de bouleaux), cartes de campement avec leur nom (« Birch Forest Camp Map »…) et sans celle du biome du coffre ; marque coffre secret sur la carte calculée de la même façon. Vérifié en jeu sur un campement (X 688 Z -2000). Tables de butin refaites depuis les fichiers 26.3 (avant : une préversion 26.4, avec un disque dans les igloos et un bloc dans les cités antiques qui n'existent pas en 26.3) ; tables du trésor et des écuries du bastion ajoutées |
+| v70 | Villager : partie « Next level-ups » enlevée (trop aléatoire sur un serveur, où les autres joueurs font aussi monter des villageois) ; le tableau des rolls prend toute la largeur |

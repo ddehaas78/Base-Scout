@@ -221,49 +221,18 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 #unplace[hidden] { display: none !important; }
 #unplace { margin-top: 8px; justify-self: start; padding: 5px 16px; }
 
-/* Librarian: "Next level-ups" panel to the right of the table */
-.libright { grid-template-columns: fit-content(620px) minmax(0, 1fr); column-gap: 14px; }
-.libright > .libcards, .libright > .libbar, .libright > .libtable { grid-column: 1; }
-.libup { grid-column: 2; grid-row: 1 / -1; display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; padding: 10px 12px;
-  background: rgba(0,0,0,.55); box-shadow: inset 0 0 0 2px #000, inset 2px 2px 0 2px #2a2a2a; }
-.libup .uphead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.libup .uphead h2 { margin: 0; }
-.libup .hint { margin: 0; }
-#upMain { display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1 1 auto; }
-#upMain[hidden], #upMaster[hidden], #upFindBox[hidden] { display: none !important; }
-.uppos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--mc); font-size: 13px; color: #e0e0e0; }
-.upwant { display: flex; flex-direction: column; gap: 4px; font-family: var(--mc); font-size: 12.5px; color: #c8c8c8; }
-.upwant .upw { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.upwant .upw b { color: #fff; font-weight: normal; }
-.upwant .upw.good b, .upwant .upw.good span { color: #55ff55; }
-.upwant .upn { color: #ffff55; }
-.upwant .em { display: inline-flex; align-items: center; gap: 2px; color: #55ff55; }
-.upwant .em img.mci { width: 14px; height: 14px; }
-#upTableBox { flex: 1 1 auto; min-height: 160px; }
-#upTable th:nth-child(1) { width: 1%; white-space: nowrap; }
-#upTable th:nth-child(2) { width: 1%; }
-#upTable td { white-space: nowrap; }
-#upTable td.pr .em img.mci { width: 16px; height: 16px; }
 @media (max-width: 1199px) {
   .libright { grid-template-columns: minmax(0, 1fr); }
-  .libup { grid-column: 1; grid-row: auto; }
 }
-.libup .uphead { flex-direction: column; align-items: flex-start; }
-#upseg { grid-template-columns: repeat(4, auto); }
-#upseg button[hidden] { display: none !important; }
 @media (max-width: 1199px) and (min-width: 880px) and (min-height: 448px) {
   #paneLib { overflow-y: auto; }
   .libwrap { height: auto; }
   .libright { grid-template-rows: none; }
-  #libTableBox, #upTableBox { max-height: 70vh; }
+  #libTableBox { max-height: 70vh; }
 }
 
 /* every job: picker, villager type, and trade cells (what you give → what you get, then the item and its details) */
-.libup .uprow { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-.libup .uprow .fld { display: grid; gap: 3px; font-size: 11px; color: #a8a8a8; font-family: var(--mc); }
-.libup .uprow select { min-width: 150px; }
-#upVarL[hidden], #upWantBox[hidden], #upCheck[hidden] { display: none !important; }
-.libup .upcheck { color: #ffaa00; }
+#upVarL[hidden], #upCheck[hidden] { display: none !important; }
 .joffer { display: inline-flex; align-items: center; gap: 6px; }
 .joffer .jt { display: inline-flex; align-items: center; gap: 2px; color: #e0e0e0; }
 .joffer .jt b { font-weight: normal; color: #fff; margin-left: 2px; }
@@ -272,8 +241,6 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .joffer .jn { color: #fff; }
 .joffer .jx { color: #c8a2ff; display: inline-flex; align-items: center; gap: 4px; }
 .joffer .jx .sw { width: 10px; height: 10px; display: inline-block; border: 1px solid #000; }
-#upTable th:nth-child(1), #upTable th:nth-child(2) { width: 1%; }
-#upTable td { white-space: normal; }
 .joffer { flex-wrap: wrap; row-gap: 2px; }
 #libLocJob[hidden], #libLocLib[hidden], #libWantSec[hidden], #libCards[hidden], #paneLib .libbar[hidden], #jobCheck[hidden] { display: none !important; }
 .jobpick .fld { display: grid; gap: 3px; font-size: 11px; color: #a8a8a8; font-family: var(--mc); }
@@ -283,30 +250,6 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 #libHowSec[hidden] { display: none !important; }
 
 /* Villager: level-ups made easier to read. One big card for the next villager to reach the level, then the list */
-.libup .uphow { color: #c8c8c8; font-size: 12.5px; line-height: 1.45; }
-.upnow { display: grid; gap: 8px; padding: 10px 12px; background: rgba(0,0,0,.45); box-shadow: inset 0 0 0 2px #000, inset 2px 2px 0 2px #3a3a3a; }
-.upnow[hidden] { display: none !important; }
-.upnow.want { box-shadow: inset 0 0 0 2px #000, inset 0 0 0 4px #55ff55; }
-.upnowh { font-family: var(--mc); font-size: 14px; color: #fff; text-shadow: var(--shadow); }
-.upoffers { display: flex; flex-wrap: wrap; gap: 8px; }
-.upoffer { display: inline-flex; align-items: center; padding: 6px 10px; background: #8b8b8b; box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff; }
-.upoffer .offer, .upoffer .joffer { font-size: 14px; }
-.upoffer img.mci { width: 20px !important; height: 20px !important; }
-.upoffer.want { outline: 2px solid #55ff55; outline-offset: 1px; }
-.upnowbtns { display: flex; flex-wrap: wrap; gap: 8px; }
-.upnowbtns button { padding: 6px 12px; }
-.upnowbtns button.go { min-width: 0; }
-.upnowbtns button[hidden] { display: none !important; }
-.libup .uptip { color: #a8a8a8; font-size: 12px; }
-.uplast { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: #a8a8a8; opacity: .85; }
-.uplast:empty { display: none; }
-.uplast .sep, .upwant .sep { color: #6a6a6a; margin: 0 2px; }
-.upwant h3 { margin: 0 0 2px; font-family: var(--mc); font-size: 12px; color: #a8a8a8; font-weight: normal; }
-.upwant .upskip { color: #a8a8a8; }
-.upwant .upskip .upn { color: #ffaa00; }
-#upTable td.num { white-space: nowrap; color: #c8c8c8; font-family: var(--mc); }
-#upTable .upnext { color: #55ff55; }
-#upTable th:nth-child(1) { width: 1%; white-space: nowrap; }
 
 /* Seed map: route (button under XZ, list of stops on the left) */
 .zoomtools button.route { display: grid; place-items: center; }
