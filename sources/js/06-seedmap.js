@@ -126,10 +126,10 @@ function renderPin() {
   const wildNote = pin.q && pin.q.key === 'retgate' ? `<p class="hint" style="margin:0">Spawns on its own in the End highlands. Throw an ender pearl into it to go back to the main island.</p>` : '';
   const jump = !g ? '' : g.key === 'gateway' ? `<button type="button" id="pinJump">Go to its exit</button>` : `<button type="button" id="pinJump">Go to the gateway</button>`;
   const BASTION_NOTES = {
-    'Bastion: treasure': 'Treasure room: the best loot, with ancient debris and a gold-block pile in the middle. Lots of magma cubes.',
-    'Bastion: housing': 'Housing units: many small rooms with chests spread around. Watch for piglin brutes.',
-    'Bastion: hoglin stables': 'Hoglin stables: hoglins in pens, chests on the ramps. Good for lodestone and gold.',
-    'Bastion: bridge': 'Bridge: a long bridge over lava to the main keep. Piglins guard the entrance.',
+    'Treasure (bastion)': 'Treasure room: the best loot, with ancient debris and a gold-block pile in the middle. Lots of magma cubes.',
+    'Housing (bastion)': 'Housing units: many small rooms with chests spread around. Watch for piglin brutes.',
+    'Hoglin stables (bastion)': 'Hoglin stables: hoglins in pens, chests on the ramps. Good for lodestone and gold.',
+    'Bridge (bastion)': 'Bridge: a long bridge over lava to the main keep. Piglins guard the entrance.',
   };
   const basNote = BASTION_NOTES[pin.label] ? `<p class="hint" style="margin:0">${BASTION_NOTES[pin.label]}</p>` : '';
   const MINOR_NOTES = {

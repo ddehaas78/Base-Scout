@@ -220,6 +220,7 @@ Pour une modification, il suffit d'ouvrir le fichier concerné (pas tout le site
 | `js/03-search.js` | Lancer / arrêter la recherche, barre d'état, liste des résultats. |
 | `js/03b-seeds.js` | Le mode Find seeds (workers en parallèle, liste des seeds, Starred, Copy / Use). |
 | `js/12-mcselect.js` | Les listes déroulantes au style du site (la liste native reste dessous : valeur et événements inchangés). |
+| `js/13-tooltip.js` | La bulle du nom complet quand la souris reste 1 s sur un bouton ou une pastille. |
 | `js/11-i18n.js` | La langue du site : traduit les textes affichés (généré par `i18n/build_js.py`). |
 | `js/03c-fixed.js` | La case Fixed spots (structures et biomes à des coordonnées précises) et Crack the exact seed. |
 | `js/04-maps.js` | Le moteur de carte commun (`MapView` : couches, zoom, déplacement) et le dessin des icônes. |
@@ -334,3 +335,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v60 | Seed map : plan et coffres des temples du désert (double-clic ou bouton « Chests », sauf en mode itinéraire) : plan vu du dessus, 4 coffres, contenu exact de chaque coffre rangé comme dans le jeu, à partir de Java 1.21.6 |
 | v61 | Onglets dans l'ordre Seed map, Spot finder, Villager ; « Find a base » s'appelle maintenant **Spot finder** (Chercheur d'endroits en français), et le bouton de Picked point **Find spots here** |
 | v62 | Plan et coffres pour buried treasure, pillager outpost, bastion (partie de départ), end city, stronghold et mineshaft : plan des pièces vu du dessus, chaque coffre (ou wagonnet) numéroté avec son contenu ; le double-clic marche aussi sur la carte du Spot finder |
+| v63 | Les bastions s'appellent par leur type d'abord (« Treasure (bastion) », « Écuries à hoglins (bastion) »…) ; en laissant la souris 1 s sur un bouton ou une pastille, son nom complet s'affiche dans une bulle comme celles du jeu |

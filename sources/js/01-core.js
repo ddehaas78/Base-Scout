@@ -28,8 +28,8 @@ const STRUCTURES = [
   { key: 'geode', name: 'Amethyst geode', minor: 1 }, { key: 'camp', name: 'Abandoned camp', minor: 1 },
 ];
 const NETHER_STRUCTS = [{ key: 'fortress', name: 'Nether fortress' },
-  { key: 'bas_treasure', name: 'Bastion: treasure' }, { key: 'bas_units', name: 'Bastion: housing' },
-  { key: 'bas_hoglin', name: 'Bastion: hoglin stables' }, { key: 'bas_bridge', name: 'Bastion: bridge' },
+  { key: 'bas_treasure', name: 'Treasure (bastion)' }, { key: 'bas_units', name: 'Housing (bastion)' },
+  { key: 'bas_hoglin', name: 'Hoglin stables (bastion)' }, { key: 'bas_bridge', name: 'Bridge (bastion)' },
   { key: 'nportal', name: 'Ruined portal', minor: 1 }];
 const END_STRUCTS = [{ key: 'endship', name: 'End ship (elytra)' }, { key: 'endcity', name: 'End city, no ship' },
   { key: 'gateway', name: 'Main island gateways' }, { key: 'gatexit', name: 'Where they lead' }, { key: 'retgate', name: 'Wild gateways' }];
