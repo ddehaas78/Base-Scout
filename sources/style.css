@@ -1,4 +1,4 @@
-/* Layout: shared seed bar + tabs. Find a base: zone target + palette left, map and two result columns right.
+/* Layout: shared seed bar + tabs. Spot finder: zone target + palette left, map and two result columns right.
    Seed map: toggles / go-to / picked point on the left, a large explorable map on the right. */
 :root {
   --ui: 0.8;   /* size of the whole interface (1 = 100 %). The page is drawn at this zoom. */

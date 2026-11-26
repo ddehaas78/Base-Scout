@@ -1,4 +1,4 @@
-// ---------- routes, on both maps (Seed map and Find a base) ----------
+// ---------- routes, on both maps (Seed map and Spot finder) ----------
 // The square button under XZ turns route mode on: each click on a structure (or anywhere) adds a stop, a click on a
 // stop takes it out. The stops are joined by a line, in order, with the length of each leg; the list gives every
 // stop's coordinates, the distance from the one before and the total. One route per map, seed and dimension, kept in

@@ -2,8 +2,8 @@
 
 Un site (un seul fichier HTML, sans serveur) pour **Minecraft Java** avec 3 onglets :
 
-1. **Find a base** : trouve le meilleur endroit pour une base sur un seed, selon les structures et les biomes que tu veux autour ;
-2. **Seed map** : la carte du seed, comme Chunkbase, pour l'Overworld, le Nether et l'End ;
+1. **Seed map** : la carte du seed, comme Chunkbase, pour l'Overworld, le Nether et l'End ;
+2. **Spot finder** (avant « Find a base ») : trouve le meilleur endroit, pour une base ou autre chose, sur un seed, selon les structures et les biomes que tu veux autour ;
 3. **Villager** : prédit les offres des villageois de tous les métiers (Java 26.1 et plus) : les rerolls du niveau Novice (par exemple dans combien de rerolls un bibliothécaire propose Mending) et les échanges reçus à chaque montée de niveau.
 
 Tout tourne dans le navigateur. La génération du monde vient de **cubiomes** (la bibliothèque C utilisée par les outils de seeds), compilée en WebAssembly et intégrée dans le fichier, avec des corrections pour les versions après 1.21.4 (voir **Versions**).
@@ -55,7 +55,7 @@ Les changements de génération ont été vérifiés dans les fichiers de donné
 
 ---
 
-## Onglet « Find a base »
+## Onglet « Spot finder »
 
 ### Le principe
 On construit ce qu'on veut autour de la base avec **3 cercles** de 500, 1000 et 1500 blocs de diamètre. Les 3 tailles se changent sur une seule ligne sous les cercles.
@@ -124,8 +124,8 @@ Respecte les règles du serveur : certains interdisent de cracker le seed.
 - **Dimension** : Overworld / Nether / End. Overworld ↔ Nether garde le même endroit (Nether = Overworld ÷ 8).
 - **Show on map** : les structures à afficher, avec les petites sous « Smaller structures » (cachées au départ). Overworld, Nether (forteresse, 4 types de bastions avec un anneau de couleur, ruined portal) et End (end ship avec élytres, cités sans bateau, les 20 portails de l'île principale et où ils mènent, portails des îles extérieures).
 - Les structures s'affichent à moins de ~20 000 blocs de large. Il faut zoomer plus pour les plus nombreuses : geodes (3 000), fossiles et mineshafts (6 000), buried treasure (8 000). Quand la carte est chargée, les petites structures sont dessinées en petit, sous les principales.
-- En haut du panneau : **Go to** et **Picked point** (coordonnées, notes selon la structure : type de bastion, profondeur d'un fossile, etc.), **Find a base here**. Bouton **XZ** sur la carte.
-- **Itinéraire** : le petit carré sous **XZ** active le mode itinéraire. Chaque clic sur une structure (ou n'importe où) ajoute une étape, un clic sur une étape la retire. Les étapes sont reliées par une ligne jaune, numérotées, avec la longueur de chaque trajet. À gauche, la section **Route** donne les coordonnées de chaque étape, la distance depuis la précédente et le total ; **Best order** garde la première étape et trouve le chemin le plus court par les autres, **Copy** copie la liste, **Clear** l'efface, un clic sur une étape centre la carte dessus. Un itinéraire par dimension, gardé par seed dans le navigateur. Le même bouton existe sur la carte de **Find a base** (la liste s'affiche alors sur la carte, en haut à gauche ; un itinéraire par seed et dimension).
+- En haut du panneau : **Go to** et **Picked point** (coordonnées, notes selon la structure : type de bastion, profondeur d'un fossile, etc.), **Find spots here**. Bouton **XZ** sur la carte.
+- **Itinéraire** : le petit carré sous **XZ** active le mode itinéraire. Chaque clic sur une structure (ou n'importe où) ajoute une étape, un clic sur une étape la retire. Les étapes sont reliées par une ligne jaune, numérotées, avec la longueur de chaque trajet. À gauche, la section **Route** donne les coordonnées de chaque étape, la distance depuis la précédente et le total ; **Best order** garde la première étape et trouve le chemin le plus court par les autres, **Copy** copie la liste, **Clear** l'efface, un clic sur une étape centre la carte dessus. Un itinéraire par dimension, gardé par seed dans le navigateur. Le même bouton existe sur la carte de **Spot finder** (la liste s'affiche alors sur la carte, en haut à gauche ; un itinéraire par seed et dimension).
 - En bas de la carte, deux barres toujours visibles : `Picked X, Z : -520, 936 | -65, 117` et `Cursor …`. Coordonnées de l'Overworld en blanc, du Nether en rouge.
 - **Plan et coffres** (temples du désert pour l'instant) : **double-clic** sur la structure, ou bouton **Chests** dans Picked point. Une fenêtre montre le plan vu du dessus avec les vraies textures (tours et porte du bon côté), les 4 coffres numérotés, et le contenu de chaque coffre rangé comme dans le jeu (grille 9 × 3, même emplacement pour chaque objet), avec les livres enchantés et la ligne « Best ». Contenu calculé à partir de Java 1.21.6. La graine de chaque coffre et le contenu suivent xpple/cubiomes (MIT), vérifiés avec ses données de test ; l'emplacement des objets dans le coffre et quel coffre est lequel ne sont **pas encore vérifiés en jeu**.
 
@@ -331,3 +331,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v58 | Case « Base on land » enlevée : en Overworld la base est toujours sur la terre ferme |
 | v59 | Optimisation : les cartes ont leur propre moteur (une carte ne met plus la recherche en pause, recherche 30 à 50 % plus rapide), biomes calculés seulement aux endroits candidats quand on ne cherche que des structures, carte redessinée une fois par image, textes et traductions plus réécrits s'ils n'ont pas changé, traductions gardées en mémoire, fond des icônes dessiné une seule fois par taille |
 | v60 | Seed map : plan et coffres des temples du désert (double-clic ou bouton « Chests », sauf en mode itinéraire) : plan vu du dessus, 4 coffres, contenu exact de chaque coffre rangé comme dans le jeu, à partir de Java 1.21.6 |
+| v61 | Onglets dans l'ordre Seed map, Spot finder, Villager ; « Find a base » s'appelle maintenant **Spot finder** (Chercheur d'endroits en français), et le bouton de Picked point **Find spots here** |
