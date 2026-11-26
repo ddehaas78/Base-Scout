@@ -386,3 +386,5 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .mctip { position: fixed; z-index: 200; pointer-events: none; max-width: 320px; padding: 5px 8px 6px; font: 13px/1.35 var(--mc); color: #fff; text-shadow: 2px 2px 0 #3f3f3f;
   background: rgba(16, 0, 16, .94); border: 2px solid rgba(16, 0, 16, .94); box-shadow: inset 0 0 0 2px #2a0a5c, inset 0 2px 0 2px #5000ff40; outline: 0; white-space: normal; }
 .mctip[hidden] { display: none; }
+/* abandoned camp: which tent and campsite this one is */
+.pinfo { margin: 0 0 8px; font-family: var(--mc); font-size: 12.5px; line-height: 1.6; color: #e0e0e0; }

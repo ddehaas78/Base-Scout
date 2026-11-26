@@ -144,7 +144,7 @@ function renderPin() {
     mineshaft: 'Mineshaft: it starts in this chunk, underground, and its tunnels spread out from here.',
     well: 'Desert well: only built on sand, so it can be missing where water or a structure is in the way.',
     geode: 'Amethyst geode: somewhere between y -58 and 30. It can be missing where a cave or water cuts through it.',
-    camp: 'Abandoned camp: tents with chests and barrels.',
+    camp: 'Abandoned camp: a small chest on its icon means its campsite has a secret chest.',
   };
   const fossilNote = pin.q && pin.q.key === 'fossil' ? (pin.q.deep
     ? 'Deep fossil: near the bottom of the world, with diamond ore in it.'

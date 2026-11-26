@@ -105,7 +105,7 @@ function pvWire() {
   const up = () => { drag = null; v.classList.remove('grab'); };
   v.addEventListener('pointerup', up); v.addEventListener('pointercancel', up);
 }
-const chestName = (S, j) => { const c = S.chests[j]; return c.ship ? 'Ship chest' : c.cart ? 'Minecart' : c.disp ? 'Dispenser' : c.barrel ? 'Barrel' : 'Chest'; };
+const chestName = (S, j) => { const c = S.chests[j]; return c.ship ? 'Ship chest' : c.cart ? 'Minecart' : c.disp ? 'Dispenser' : c.barrel ? 'Barrel' : c.secret ? 'Secret chest' : 'Chest'; };
 const PLAN_INFO = {
   pyramid: ['Desert pyramid', "The 4 chests are in a hidden room about 12 blocks under the blue block in the middle of the floor. A pressure plate in that room sets off 9 TNT: don't step on it."],
   treasure: ['Buried treasure', 'One chest, buried at exactly these X and Z, usually a few blocks under the sand or gravel of a beach or the sea floor.'],
@@ -145,7 +145,7 @@ function renderPlan() {
   const [title, note] = PLAN_INFO[planKind(S.key)];
   $('planTitle').innerHTML = `<span>${title}</span> <span class="sub">X ${S.x} · Z ${S.z}</span>`;
   if (S.drawn !== true) {   // the map is built once per plan; picking a chest only moves the highlight
-    $('planMap').innerHTML = (S.key === 'pyramid' ? planHTML(S) : schemHTML(S)) + `<p class="hint">${note}</p>`;
+    $('planMap').innerHTML = (S.info ? `<p class="pinfo">${S.info}</p>` : '') + (S.key === 'pyramid' ? planHTML(S) : schemHTML(S)) + `<p class="hint">${note}</p>`;
     S.drawn = true; if (S.key !== 'pyramid') requestAnimationFrame(pvWire);
   } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
   if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">${S.note || 'No chest in this one.'}</p>`; return; }

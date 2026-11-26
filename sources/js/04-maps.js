@@ -164,6 +164,17 @@ function iglooBasement(q) {   // the igloo's own random numbers: turn, then base
   if (!BASEMENT.has(k)) { if (BASEMENT.size > 5000) BASEMENT.clear(); const r = chunkRand(BigInt(seed), q.x >> 4, q.z >> 4); r.nextInt(4); BASEMENT.set(k, r.nextDouble() < 0.5); }
   return BASEMENT.get(k);
 }
+// abandoned camps whose campsite has a secret chest: a small chest on the icon (see campVariant in js/06b2-structs2.js)
+const SECRET = new Map();
+function campSecret(M, q) {
+  const seed = parseSeed($('seed').value); if (seed === null || typeof campVariant === 'undefined') return false;
+  const k = seed + ',' + q.x + ',' + q.z;
+  let v = SECRET.get(k);
+  if (v === undefined) { if (SECRET.size > 5000) SECRET.clear(); v = campVariant(seed, q.x, q.z).site; SECRET.set(k, v); }
+  if (v <= 45) return campSiteKinds(v, '').includes('s');
+  const b = M.biomeAt(q.x, q.z);   // the last 4 campsites depend on the biome: only known where the map is drawn
+  return !!b && campSiteKinds(v, b.toLowerCase().replace(/ /g, '_')).includes('s');
+}
 function drawIcons(M, keys, sizeFor, tile) {
   const { ctx, cv } = M, d = drawScale();
   const order = ICON_ORDER || (ICON_ORDER = ALL_STRUCTS.slice().sort((a, b) => DRAW_ORDER.indexOf(a.key) - DRAW_ORDER.indexOf(b.key)));
@@ -187,6 +198,7 @@ function drawIcons(M, keys, sizeFor, tile) {
       }
       if (ic) ctx.drawImage(ic.canvas, x - sz/2, y - sz/2, sz, sz);
       if (s.key === 'igloo' && APPLE.naturalWidth && iglooBasement(q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(APPLE, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
+      if (s.key === 'camp' && ICONS.bas_treasure && campSecret(M, q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(ICONS.bas_treasure.canvas, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
     }
   }
 }
