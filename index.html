@@ -733,6 +733,18 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .donemenu .dmxz { color: #a8a8a8; font-size: 11px; margin-left: 4px; }
 .donemenu button { text-align: left; }
 .donemenu button.on { color: #55ff55 !important; }
+/* messages, like the game's toasts: top right, dark box with a pixel frame, an icon, slides in from the side */
+.toast { left: auto; right: 16px; top: 76px; bottom: auto; transform: none; z-index: 250; display: flex; align-items: center; gap: 10px;
+  max-width: min(380px, calc(100% - 32px)); padding: 8px 12px 8px 8px; border-radius: 0; background: #212121; color: #fff;
+  font: 13px/1.4 var(--mc); text-shadow: 2px 2px 0 #3f3f3f;
+  box-shadow: 0 0 0 2px #000, inset 2px 2px 0 #4a4a4a, inset -2px -2px 0 #0e0e0e, 0 4px 14px rgba(0,0,0,.5); }
+.toast img { width: 32px; height: 32px; flex: none; image-rendering: pixelated; background: #8b8b8b; padding: 2px;
+  box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff; }
+.toast.bad { box-shadow: 0 0 0 2px #000, inset 2px 2px 0 #6a2a2a, inset -2px -2px 0 #1a0606, 0 4px 14px rgba(0,0,0,.5); }
+.toast.bad span { color: #ff8080; }
+.toast.in { animation: toastin .25s ease-out; }
+@keyframes toastin { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .toast.in { animation: none; } }
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} img{max-width:100%}</style>
 </head>
@@ -4720,7 +4732,7 @@ function renderPlan() {
 }
 function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;
-  const seed = parseSeed($('seed').value); if (seed === null) { toast('Enter a seed first.'); return true; }
+  const seed = parseSeed($('seed').value); if (seed === null) { toast('Enter a seed first.', 'bad'); return true; }
   planQ = { key: q.key, x: q.x, z: q.z };   // for the "Mark as done" button (js/06e-done.js)
   if (q.key === 'camp') {   // the camp depends on the exact biome at its tent: ask the engine first
     const guess = String(M.biomeAt(q.x, q.z) || '').toLowerCase().replace(/ /g, '_');
@@ -4732,7 +4744,7 @@ function openPlan(q, M = xMap) {
 }
 function showPlan(p) {
   planCur = p; planSel = 0;
-  if (!planCur) { toast('No plan for this structure in this version.'); return true; }
+  if (!planCur) { toast('No plan for this structure in this version.', 'bad'); return true; }
   $('planDlg').hidden = false; renderPlan(); renderDoneBtn(); $('planClose').focus();
   return true;
 }
@@ -5888,7 +5900,15 @@ function copy(text) {
   try { navigator.clipboard.writeText(text).then(done, fb); } catch { fb(); }
 }
 let toastT;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2400); }
+// a message in the corner, like the game's toasts: an icon, then the text. kind 'bad' (something can't be done) shows a barrier
+function toast(msg, kind) {
+  const t = $('toast'), tex = kind === 'bad' ? 'item/barrier' : 'item/writable_book';
+  t.innerHTML = `<img alt="" src="${texUrl(tex)}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${texUrl(tex, 1)}'}"><span></span>`;
+  t.querySelector('span').textContent = msg;
+  t.classList.toggle('bad', kind === 'bad');
+  t.hidden = false; t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');   // slide in again for each message
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2800);
+}
 $('start').onchange = () => { const c = $('start').value === 'custom'; $('cxl').hidden = !c; $('czl').hidden = !c; };
 // the browser can bring back "Custom X / Z" by itself (reload, back button) without a change event
 $('start').onchange();

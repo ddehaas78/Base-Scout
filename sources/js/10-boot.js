@@ -5,7 +5,15 @@ function copy(text) {
   try { navigator.clipboard.writeText(text).then(done, fb); } catch { fb(); }
 }
 let toastT;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2400); }
+// a message in the corner, like the game's toasts: an icon, then the text. kind 'bad' (something can't be done) shows a barrier
+function toast(msg, kind) {
+  const t = $('toast'), tex = kind === 'bad' ? 'item/barrier' : 'item/writable_book';
+  t.innerHTML = `<img alt="" src="${texUrl(tex)}" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${texUrl(tex, 1)}'}"><span></span>`;
+  t.querySelector('span').textContent = msg;
+  t.classList.toggle('bad', kind === 'bad');
+  t.hidden = false; t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');   // slide in again for each message
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2800);
+}
 $('start').onchange = () => { const c = $('start').value === 'custom'; $('cxl').hidden = !c; $('czl').hidden = !c; };
 // the browser can bring back "Custom X / Z" by itself (reload, back button) without a change event
 $('start').onchange();
