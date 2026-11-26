@@ -123,7 +123,8 @@ function MapView(o) {
   // pan, pinch, wheel, click, hover
   const pts = new Map(); let downAt = null;
   const local = e => { const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1; return [(e.clientX - r.left) * d, (e.clientY - r.top) * d]; };
-  cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); downAt = [e.clientX, e.clientY]; });
+  cv.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.button !== 0) return;   // right click: its own menu (js/06e-done.js)
+    cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); downAt = [e.clientX, e.clientY]; });
   cv.addEventListener('pointermove', e => {
     if (M.layers.length && o.hover) { const [sx, sy] = local(e), [x, z] = M.toWorld(sx, sy); o.hover(M, Math.floor(x), Math.floor(z), sx, sy); }
     if (!pts.has(e.pointerId) || !M.layers.length) return;
@@ -213,7 +214,7 @@ function campSecret(M, q) {
 async function flushSecret() {
   const list = secretQ.splice(0, 400); secretT = list.length && secretQ.length ? setTimeout(flushSecret, 60) : 0;
   const guess = list.map(([k, seed, x, z]) => campBuild(seed, x, z, 'forest'));   // the tent's middle (the same place for nearly all biomes)
-  const bs = await exactBiomes(guess.map(C => C.A.center));
+  const bs = await exactBiomes(guess.map(C => [C.A.center[0], SURFACE_Y, C.A.center[2]]));
   list.forEach(([k, seed, x, z], i) => {
     const C = CAMP_BIOMES.includes(bs[i]) && campBuild(seed, x, z, bs[i]);
     SECRET.set(k, !!C && C.conts.some(c => /secret/.test(c.table)));
@@ -229,6 +230,8 @@ function drawIcons(M, keys, sizeFor, tile) {
     for (const q of M.structs[s.key].values()) {
       const [x, y] = M.scr(q.x, q.z);
       if (x < -30 || y < -30 || x > cv.width + 30 || y > cv.height + 30) continue;
+      const done = typeof isDone === 'function' && isDone(s.key, q);
+      if (done && doneHide) continue;
       const t = tile(s.key, sz);
       if (t) {   // dark square behind the icon; its border is the bastion colour, or the colour asked for (t)
         const pad = 3 * d, back = iconBack(sz, d);
@@ -243,15 +246,25 @@ function drawIcons(M, keys, sizeFor, tile) {
       }
       if (ic) ctx.drawImage(ic.canvas, x - sz/2, y - sz/2, sz, sz);
       if (s.key === 'igloo' && APPLE.naturalWidth && iglooBasement(q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(APPLE, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
+      if (done) doneMark(ctx, x, y, sz, d);
       if (s.key === 'camp' && ICONS.bas_treasure && campSecret(M, q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(ICONS.bas_treasure.canvas, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
     }
   }
+}
+// a done structure: its icon dimmed, a green tick in the corner
+function doneMark(g, x, y, sz, d) {
+  const r = sz / 2 + 3 * d;
+  g.fillStyle = 'rgba(10,12,11,.62)'; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  const cx = x + r * 0.78, cy = y - r * 0.78;
+  g.beginPath(); g.arc(cx, cy, 6.5 * d, 0, Math.PI * 2); g.fillStyle = '#2e9e3e'; g.fill(); g.lineWidth = 1.5 * d; g.strokeStyle = '#000'; g.stroke();
+  g.beginPath(); g.moveTo(cx - 3.2 * d, cy); g.lineTo(cx - 0.9 * d, cy + 2.4 * d); g.lineTo(cx + 3.3 * d, cy - 2.6 * d); g.strokeStyle = '#fff'; g.lineWidth = 1.8 * d; g.stroke();
 }
 function structAt(M, keys, sx, sy, radius) {
   const d = drawScale(); let best = null, bd = radius * d;
   for (const s of ALL_STRUCTS) {
     if (!keys.has(s.key) || !M.structs[s.key]) continue;
     for (const q of M.structs[s.key].values()) {
+      if (doneHide && typeof isDone === 'function' && isDone(s.key, q)) continue;   // hidden: not clickable either
       const [x, y] = M.scr(q.x, q.z), dd = Math.hypot(x - sx, y - sy);
       if (dd < bd) { bd = dd; best = { ...q, key: s.key, name: s.name }; }
     }

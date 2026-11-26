@@ -186,6 +186,7 @@ function renderPlan() {
 function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;
   const seed = parseSeed($('seed').value); if (seed === null) { toast('Enter a seed first.'); return true; }
+  planQ = { key: q.key, x: q.x, z: q.z };   // for the "Mark as done" button (js/06e-done.js)
   if (q.key === 'camp') {   // the camp depends on the exact biome at its tent: ask the engine first
     const guess = String(M.biomeAt(q.x, q.z) || '').toLowerCase().replace(/ /g, '_');
     campResolve(seed, q.x, q.z, guess).then(C => showPlan(C && lootStructure('camp', BigInt(seed), q.x, q.z, VER, C.biome, C)));
@@ -197,7 +198,7 @@ function openPlan(q, M = xMap) {
 function showPlan(p) {
   planCur = p; planSel = 0;
   if (!planCur) { toast('No plan for this structure in this version.'); return true; }
-  $('planDlg').hidden = false; renderPlan(); $('planClose').focus();
+  $('planDlg').hidden = false; renderPlan(); renderDoneBtn(); $('planClose').focus();
   return true;
 }
 const closePlan = () => { $('planDlg').hidden = true; planCur = null; };

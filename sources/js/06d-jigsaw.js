@@ -165,6 +165,9 @@ function exactBiomes(pts) {   // [[x, y, z]] → Promise of biome ids ('birch_fo
 }
 function onPts(m) { const f = ptsWait.get(m.id); if (f) { ptsWait.delete(m.id); f(m.ids.map(i => names && names[i] ? names[i].toLowerCase().replace(/ /g, '_') : null)); } }
 
+// the game takes a camp's biome at the ground; the ground's height isn't known here, but above it the biome is the
+// surface one (below it can be a cave biome: dripstone caves under a hill), so it's read high up
+const SURFACE_Y = 256;
 // ---- abandoned camps: each biome has its own camp (own pieces, own loot seeds); the game checks the biome at the middle of the tent ----
 const campBuild = (ws, x, z, biome) => {
   const A = jigAssemble(BigInt(ws), x >> 4, z >> 4, JIG_CONF.camp, 'abandoned_camp/tent/' + biome);
@@ -173,10 +176,10 @@ const campBuild = (ws, x, z, biome) => {
 async function campResolve(ws, x, z, guess) {   // which camp the game built here: guess, check the biome at its tent's middle, again if it moved
   let b = CAMP_BIOMES.includes(guess) ? guess : 'forest';
   for (let i = 0; i < 3; i++) {
-    const C = campBuild(ws, x, z, b), [mx, my, mz] = C.A.center, [got] = await exactBiomes([[mx, my, mz]]);
+    const C = campBuild(ws, x, z, b), [mx, , mz] = C.A.center, [got] = await exactBiomes([[mx, SURFACE_Y, mz]]);
     if (!got || got === b || !CAMP_BIOMES.includes(got)) {
       if (got && !CAMP_BIOMES.includes(got)) return null;
-      const bs = await exactBiomes(C.conts.map(c => [c.x, C.A.center[1], c.z]));   // each chest's own biome (some loot depends on it)
+      const bs = await exactBiomes(C.conts.map(c => [c.x, SURFACE_Y, c.z]));   // each chest's own biome (some loot depends on it)
       C.conts.forEach((c, i) => { c.biome = bs[i] || b; });
       return C;
     }

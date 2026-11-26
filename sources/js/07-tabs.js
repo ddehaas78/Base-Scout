@@ -22,6 +22,7 @@ function seedChanged() {
   const s = parseSeed($('seed').value);
   try { localStorage.setItem('basescout.seed', $('seed').value.trim()); } catch {}
   renderSaved();
+  if (typeof renderDone === 'function') renderDone();   // structures done: per seed (js/06e-done.js)
   if (curTab === 'lib') renderLib();
   if (!ready || s === lastSeed) return;
   lastSeed = s; xSpawn = null; pin = null; renderPin();

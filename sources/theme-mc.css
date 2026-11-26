@@ -343,3 +343,17 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 #planChests { max-width: calc(var(--slot, 36px) * 9 + 40px); }
 .pgridwrap { max-width: 100%; }
 .slot img.own { image-rendering: auto; }   /* 3D block icons are drawn smooth, like the game's */
+/* structures marked as done (js/06e-done.js) */
+.donebar { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
+.donebar .check { color: #55ff55; }
+.donecount { margin-left: auto; font: 12px var(--mc); color: #a8a8a8; }
+#planDone { margin-left: auto; padding: 4px 12px; }
+#planDone[hidden] { display: none !important; }
+#planDone.on { color: #55ff55 !important; }
+.planhead #planDone + #planClose { margin-left: 8px; }
+.donemenu { position: fixed; z-index: 150; padding: 6px; display: grid; gap: 4px; min-width: 200px; }
+.donemenu[hidden] { display: none !important; }
+.donemenu .dmt { font: 13px var(--mc); color: #fff; padding: 2px 4px; text-shadow: var(--shadow); }
+.donemenu .dmxz { color: #a8a8a8; font-size: 11px; margin-left: 4px; }
+.donemenu button { text-align: left; }
+.donemenu button.on { color: #55ff55 !important; }
