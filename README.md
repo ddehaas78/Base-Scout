@@ -374,3 +374,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v99 | L'avertissement avant la vue 3D est une fenêtre aux couleurs du site (boutons OK / Annuler) au lieu de la boîte grise du navigateur |
 | v100 | Filtre en bas à droite des plans : cases à cocher par sorte de conteneur (coffre, tonneau, pot, distributeur, coffre secret…) avec leur nombre, pour cacher ceux qu'on ne veut pas voir (onglets, plan et 3D) ; colonne de droite rangée de bas en haut : le filtre tout en bas, le contenu du conteneur juste au-dessus, la liste des conteneurs en haut ; liste des conteneurs 3 par ligne, centrés, noms courts (Disp., Secret, Navire) |
 | v101 | Vue 3D : on peut tourner la tête même quand la souris est sur un numéro de conteneur (un clic sans bouger choisit toujours le conteneur) ; correction : choisir un conteneur depuis la 3D ne marchait plus |
+| v102 | Vue 3D : numéros des conteneurs plus gros (plus faciles à cliquer pour voir leur contenu) |
