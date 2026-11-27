@@ -7,7 +7,7 @@ From misode/mcmeta (tag DATA, Mojang's own files): the template pools, and for e
 its size, its jigsaw blocks (where other pieces attach) and its containers (chests, barrels... with their loot table).
 The assembly itself (the game's JigsawPlacement) is in js/06d-jigsaw.js.
 """
-import gzip, io, json, os, re, struct, sys, tempfile, urllib.request
+import gzip, io, json, os, re, struct, sys, tempfile, time, urllib.error, urllib.request
 
 DATA = '26.3-data'
 BASE = f'https://raw.githubusercontent.com/misode/mcmeta/{DATA}/data/minecraft/'
@@ -16,7 +16,9 @@ CACHE = sys.argv[1] if len(sys.argv) > 1 else os.path.join(tempfile.gettempdir()
 os.makedirs(CACHE, exist_ok=True)
 CAMP_BIOMES = ['bamboo_jungle', 'birch_forest', 'cherry_grove', 'dappled_forest', 'flower_forest', 'forest', 'meadow', 'old_growth_birch_forest',
   'old_growth_pine_taiga', 'old_growth_spruce_taiga', 'pale_garden', 'savanna', 'snowy_taiga', 'sparse_jungle', 'swamp', 'taiga', 'windswept_forest', 'wooded_badlands']
-STARTS = {'bastion': 'bastion/starts', 'ancient': 'ancient_city/city_center', **{'camp_' + b: 'abandoned_camp/tent/' + b for b in CAMP_BIOMES}}
+VILLAGES = ['desert', 'plains', 'savanna', 'snowy', 'taiga']
+STARTS = {'bastion': 'bastion/starts', 'ancient': 'ancient_city/city_center', **{'camp_' + b: 'abandoned_camp/tent/' + b for b in CAMP_BIOMES},
+          **{'village_' + v: 'village/' + v + '/town_centers' for v in VILLAGES}, 'trial': 'trial_chambers/chamber/end'}
 # blocks whose block entity is a RandomizableContainer: placing one takes a random number for its loot seed
 CONTAINERS = {'chest', 'trapped_chest', 'barrel', 'dispenser', 'dropper', 'hopper', 'decorated_pot', 'crafter',
               'shulker_box'} | {c + '_shulker_box' for c in 'white orange magenta light_blue yellow lime pink gray light_gray cyan purple blue brown green red black'.split()}
@@ -24,7 +26,11 @@ CONTAINERS = {'chest', 'trapped_chest', 'barrel', 'dispenser', 'dropper', 'hoppe
 def get(path):
     f = os.path.join(CACHE, path.replace('/', '__'))
     if os.path.exists(f): return open(f, 'rb').read()
-    d = urllib.request.urlopen(BASE + path, timeout=60).read()
+    for i in range(8):   # GitHub may say "too many requests": wait and try again
+        try: d = urllib.request.urlopen(BASE + path, timeout=60).read(); break
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or i == 7: raise
+            time.sleep(5 * (i + 1))
     open(f, 'wb').write(d)
     return d
 
@@ -87,8 +93,19 @@ def element(e):
     if t == 'empty_pool_element': return {'t': 'e'}
     raise ValueError(t)
 
+def aliases():   # trial chambers: some pools are aliases (spawner mobs, picked by their own random): one target stands for all
+    out = {}
+    def walk(a):
+        t = bare(a['type'])
+        if t == 'direct': out.setdefault(bare(a['alias']), bare(a['target']))
+        elif t == 'random': out.setdefault(bare(a['alias']), bare(a['targets'][0]['data']))
+        elif t == 'random_group': [walk(x) for x in a['groups'][0]['data']]
+    for x in json.loads(get('worldgen/structure/trial_chambers.json')).get('pool_aliases', []): walk(x)
+    return out
+
 def main():
     pools, temps, todo = {}, {}, list(STARTS.values())
+    ALIAS = aliases()
     def need_template(loc):
         if loc not in temps:
             temps[loc] = template(loc)
@@ -100,7 +117,7 @@ def main():
     while todo:
         p = todo.pop()
         if p in pools or p == 'empty': continue
-        d = json.loads(get('worldgen/template_pool/' + p + '.json'))
+        d = json.loads(get('worldgen/template_pool/' + ALIAS.get(p, p) + '.json'))
         P = {'fb': bare(d.get('fallback', 'empty')), 'els': []}
         for x in d['elements']:
             el = element(x['element']); P['els'].append([el, x['weight']]); walk(el)
@@ -111,12 +128,13 @@ def main():
     def short(el):
         if el['t'] == 's': return [idx[el['loc']], el['proj'][0]]
         if el['t'] == 'l': return ['L', [short(x) for x in el['els']], el['proj'][0]]
+        if el['t'] == 'f': return ['f', el['proj'][0]]
         return [el['t']]
     out = {'starts': STARTS, 'names': names, 'temps': [temps[n] for n in names],
            'pools': {k: {'fb': v['fb'], 'els': [[short(e), w] for e, w in v['els']]} for k, v in pools.items()}}
     js = os.path.join(HERE, '..', 'js', '06d-jigsawdata.js')
     with open(js, 'w') as f:
-        f.write(f'// bastions, ancient cities and abandoned camps, piece by piece: pools and pieces of Java {DATA[:-5]} (built by i18n/jigsaw.py)\n')
+        f.write(f'// bastions, ancient cities, abandoned camps, villages and trial chambers, piece by piece: pools and pieces of Java {DATA[:-5]} (built by i18n/jigsaw.py)\n')
         f.write('const JIG = ' + json.dumps(out, separators=(',', ':')) + ';\n')
     nc = sum(len(t['cont']) for t in temps.values())
     print(len(pools), 'pools,', len(temps), 'pieces,', nc, 'containers,', os.path.getsize(js), 'bytes')

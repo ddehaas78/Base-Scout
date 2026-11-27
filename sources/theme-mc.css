@@ -315,7 +315,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .plegend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; max-width: min(470px, calc(100vw - 80px)); font-size: 12px; color: #d8d8d8; }
 .plegend span { display: inline-flex; align-items: center; gap: 5px; }
 .plegend i { width: 14px; height: 14px; background-size: 14px 14px; image-rendering: pixelated; box-shadow: 0 0 0 1px #000; }
-.ptabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.ptabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; max-height: 182px; overflow-y: auto; }
 /* a chest like the game's: light grey window, 9 x 3 slots */
 .mcchest { background: #c6c6c6; padding: 8px 8px 10px; width: max-content; max-width: 100%; box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 0 0 0 2px #000; }
 .mct { font-family: var(--mc); color: #404040; font-size: 13px; margin: 0 0 6px 2px; display: flex; gap: 6px; align-items: baseline; }

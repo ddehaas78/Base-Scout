@@ -56,6 +56,11 @@ const LOOK = {
   nportal: p => p.t ? ['Giant ruined portal', ['block/crying_obsidian']] : ['Ruined portal', ['block/obsidian']],
   fortress: p => [9, 10].includes(p.t) ? ['Corridor turn (chest 1 in 3)', ['block/red_nether_bricks']] : p.t >= 7 ? ['Corridor', ['block/nether_bricks'], .2] : ['Bridge', ['block/nether_bricks']],
   camp: p => p.t === 2 ? ['Tree', ['block/oak_leaves'], .2] : p.t ? ['Campsite', ['block/coarse_dirt']] : ['Tent', ['block/white_wool']],
+  village: p => /streets/.test(p.t) ? ['Path', ['block/dirt_path_top']] : /town_centers/.test(p.t) ? ['Village center', ['block/cobblestone']]
+    : /decor|well|fountain/.test(p.t) ? ['Decoration', ['block/cobblestone'], .3]
+    : ['House', [{ plains: 'block/oak_planks', desert: 'block/sandstone_top', savanna: 'block/acacia_planks', snowy: 'block/spruce_planks', taiga: 'block/spruce_planks' }[p.kind] || 'block/oak_planks']],
+  trial: p => /\/chamber\//.test(p.t) ? ['Trial chamber', ['block/chiseled_tuff_top']] : /intersection/.test(p.t) ? ['Crossing', ['block/copper_block'], .2]
+    : /corridor|hallway|entrance/.test(p.t) ? ['Corridor', ['block/tuff_bricks']] : /reward/.test(p.t) ? ['Vault', ['block/chiseled_tuff_bricks_top']] : ['Room', ['block/tuff_bricks'], .3],
   ancient: p => /city_center/.test(p.t) && !/walls/.test(p.t) ? ['City center (portal frame)', ['block/reinforced_deepslate_top']]
     : /walls/.test(p.t) ? ['Walls', ['block/deepslate_bricks'], .25] : /ice_box/.test(p.t) ? ['Ice box', ['block/packed_ice']]
     : /entrance/.test(p.t) ? ['Entrance', ['block/deepslate_tiles'], .35] : /structures/.test(p.t) ? ['Building', ['block/deepslate_tiles']] : ['Sculk', ['block/sculk']],
@@ -111,7 +116,7 @@ function pvWire() {
   const up = () => { drag = null; v.classList.remove('grab'); };
   v.addEventListener('pointerup', up); v.addEventListener('pointercancel', up);
 }
-const chestName = (S, j) => { const c = S.chests[j]; return c.ship ? 'Ship chest' : c.cart ? 'Minecart' : c.disp ? 'Dispenser' : c.barrel ? 'Barrel' : c.secret ? 'Secret chest' : 'Chest'; };
+const chestName = (S, j) => { const c = S.chests[j]; return c.ship ? 'Ship chest' : c.cart ? 'Minecart' : c.disp ? 'Dispenser' : c.pot ? 'Pot' : c.barrel ? 'Barrel' : c.secret ? 'Secret chest' : 'Chest'; };
 const PLAN_INFO = {
   pyramid: ['Desert pyramid', "The 4 chests are in a hidden room about 12 blocks under the blue block in the middle of the floor. A pressure plate in that room sets off 9 TNT: don't step on it."],
   treasure: ['Buried treasure', 'One chest, buried at exactly these X and Z, usually a few blocks under the sand or gravel of a beach or the sea floor.'],
@@ -123,6 +128,8 @@ const PLAN_INFO = {
   nportal: ['Ruined portal', 'One chest, near the portal: where exactly depends on the ground, so the marker only shows the portal.'],
   fortress: ['Nether fortress', 'Chests are in some corridor turns (about 1 in 3). The fortress drawn here can be cut short by lava lakes or the edges of the Nether.'],
   camp: ['Abandoned camp', 'A tent and a campsite, put together like the game does it: chests and barrels are at these exact X and Z (their height depends on the ground). Some campsites also hide a secret chest.'],
+  village: ['Village', 'Every chest of the village at its exact X and Z (the height depends on the ground; on hilly ground some houses can move or be missing).'],
+  trial: ['Trial chambers', 'Every chest, barrel, pot and dispenser with loot, at its exact place and height (Y). The vaults need a trial key: their loot is not shown.'],
   ancient: ['Ancient city', 'Every chest of the city, at its exact place and height (Y): pieces are drawn flat, so chests on several floors can look close. Sneak: sculk shriekers call the Warden.'],
   bastion: ['Bastion remnant', 'Every chest of the bastion, put together piece by piece like the game does it, at its exact place and height (Y). Pieces are drawn flat, so chests on several floors can look close.'],
   endcity: ['End city', 'Tall towers have 2 chests at the top, some houses have 1, and the ship has 2 (and the elytra). The plan is flat: chests can be high up.'],
@@ -167,7 +174,7 @@ function slotHTML(s, c) {
 function chestHTML(S, k) {
   const c = S.chests[k];
   if (!c.items) return `<p class="hint"><span>Chest contents are worked out from Java</span> ${LOOT_FROM}. <span>Pick a newer version at the top to see them.</span></p>`;
-  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div>${c.unsure ? '<p class="hint">A tree grows in this chunk before this chest is filled: its contents can differ.</p>' : ''}<div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>`;
+  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}${c.house ? ` <span class="mchouse">· ${escH(c.house)}</span>` : ''}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div>${c.unsure ? '<p class="hint">A tree grows in this chunk before this chest is filled: its contents can differ.</p>' : ''}<div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>`;
 }
 function renderPlan() {
   const S = planCur; if (!S) return;
@@ -187,6 +194,10 @@ function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;
   const seed = parseSeed($('seed').value); if (seed === null) { toast('Enter a seed first.', 'bad'); return true; }
   planQ = { key: q.key, x: q.x, z: q.z };   // for the "Mark as done" button (js/06e-done.js)
+  if (q.key === 'village') {   // which village it is depends on the exact biome at its center: ask the engine first
+    villageResolve(seed, q.x, q.z, VER).then(V => showPlan(V && lootStructure('village', BigInt(seed), q.x, q.z, VER, '', V)));
+    return true;
+  }
   if (q.key === 'camp') {   // the camp depends on the exact biome at its tent: ask the engine first
     const guess = String(M.biomeAt(q.x, q.z) || '').toLowerCase().replace(/ /g, '_');
     campResolve(seed, q.x, q.z, guess).then(C => showPlan(C && lootStructure('camp', BigInt(seed), q.x, q.z, VER, C.biome, C)));

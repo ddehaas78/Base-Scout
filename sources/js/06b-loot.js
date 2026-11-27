@@ -95,10 +95,10 @@ function lootEnchant(r, key, cost) {
 // roll a loot table: a list of { i: item, n: count, ench: [[enchantment, level]], note? }
 // (pools with conditions and entries with chances follow xpple/cubiomes: each entry's chances are rolled every time, in order)
 const chance = (r, c) => r.nextFloat() < Math.fround(c);
-function lootRoll(name, ver, seed, biome) {   // biome: the chest's own (some entries are left out in some biomes)
+function lootRoll(name, ver, seed, biome, size = 27) {   // size: the container's slots (dispenser 9, pot 1)   // biome: the chest's own (some entries are left out in some biomes)
   const T = lootTableFor(name, ver); if (!T) return null;
   const r = new LootRand(BigInt(seed)), out = [];
-  for (const [[a, b], ents, poolFns, poolIf] of T) {
+  const pools = T => { for (const [[a, b], ents, poolFns, poolIf] of T) {
     const pass = c => typeof c === 'number' ? chance(r, c) : !(c[0] === 'nb' && c[1].includes(biome));
     if (poolIf && !poolIf.every(pass)) continue;
     const rolls = a === b ? a : r.nextInt(b - a + 1) + a, total = ents.reduce((s, e) => s + e[1], 0), conditional = ents.some(e => e[3]);
@@ -114,6 +114,7 @@ function lootRoll(name, ver, seed, biome) {   // biome: the chest's own (some en
         e = ok[0];
         if (ok.length > 1) { let w = r.nextInt(ok.reduce((s, x) => s + x[1], 0)); for (e of ok) { w -= e[1]; if (w < 0) break; } }
       }
+      if (typeof e[0] === 'string') { const T2 = lootTableFor(e[0], ver); if (T2) pools(T2); continue; }   // another table (trial chambers' reward chests)
       if (e[0] < 0) continue;
       const it = { i: e[0], n: 1, ench: [] };
       for (const f of poolFns ? e[2].concat(poolFns) : e[2]) {   // the item's own functions, then the pool's
@@ -128,23 +129,24 @@ function lootRoll(name, ver, seed, biome) {   // biome: the chest's own (some en
       }
       out.push(it);
     }
-  }
-  out.slots = lootSlots(r, out);
+  } };
+  pools(T);
+  out.slots = lootSlots(r, out, size);
   return out;
 }
-// where the game puts each stack in a 27-slot chest: shuffle the free slots, split some stacks, shuffle the stacks
-function lootSlots(r, items) {
+// where the game puts each stack in a chest (27 slots): shuffle the free slots, split some stacks, shuffle the stacks
+function lootSlots(r, items, size = 27) {
   const between = (a, b) => a >= b ? a : r.nextInt(b - a + 1) + a, shuffle = a => { for (let i = a.length; i > 1; i--) { const j = r.nextInt(i); [a[i - 1], a[j]] = [a[j], a[i - 1]]; } };
-  const free = Array.from({ length: 27 }, (_, i) => i); shuffle(free);
+  const free = Array.from({ length: size }, (_, i) => i); shuffle(free);
   let stacks = [], big = [];
   for (const it of items) (it.n > 1 ? big : stacks).push({ ...it });
-  while (27 - stacks.length - big.length > 0 && big.length) {
+  while (size - stacks.length - big.length > 0 && big.length) {
     const s = big.splice(between(0, big.length - 1), 1)[0], k = between(1, Math.trunc(s.n / 2)), s2 = { ...s, n: k }; s.n -= k;
     if (s.n > 1 && r.next(1) !== 0) big.push(s); else stacks.push(s);
     if (s2.n > 1 && r.next(1) !== 0) big.push(s2); else stacks.push(s2);
   }
   stacks = stacks.concat(big); shuffle(stacks);
-  const slots = new Array(27).fill(null);
+  const slots = new Array(size).fill(null);
   for (const s of stacks) { if (!free.length) break; slots[free.pop()] = s; }
   return slots;
 }

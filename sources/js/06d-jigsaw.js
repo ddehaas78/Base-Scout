@@ -10,6 +10,8 @@ const JIG_CONF = {
   bastion: { pool: 'bastion/starts', size: 6, dist: 80, y: 33, hack: false, anchor: null, minY: 0, maxY: 256 },
   ancient: { pool: 'ancient_city/city_center', size: 7, dist: 116, y: -27, hack: false, anchor: 'city_anchor', minY: -64, maxY: 320 },
   camp: { size: 2, dist: 80, y: 64, hack: true, anchor: null, minY: -64, maxY: 320 },   // y: the ground, only roughly (it moves everything the same)
+  village: { size: 6, dist: 80, y: 64, hack: true, anchor: null, minY: -64, maxY: 320 },   // pool: village/<type>/town_centers
+  trial: { pool: 'trial_chambers/chamber/end', size: 20, dist: 116, ySample: [-40, -20], pad: 10, hack: false, anchor: null, minY: -64, maxY: 320 },
 };
 const DIRS = { north: [0, 0, -1], south: [0, 0, 1], west: [-1, 0, 0], east: [1, 0, 0], up: [0, 1, 0], down: [0, -1, 0] };
 const OPP = { north: 'south', south: 'north', west: 'east', east: 'west', up: 'down', down: 'up' };
@@ -29,11 +31,12 @@ const tmplBox = (t, pos, r) => {
 const inBox = (b, p) => p[0] >= b[0] && p[0] <= b[3] && p[1] >= b[1] && p[1] <= b[4] && p[2] >= b[2] && p[2] <= b[5];
 const hit = (a, b) => a[0] <= b[3] && a[3] >= b[0] && a[1] <= b[4] && a[4] >= b[1] && a[2] <= b[5] && a[5] >= b[2];
 
-// pool elements: ['s', template] one piece, ['L', [elements]] several at once, ['f'] a feature (tree), ['e'] nothing
+// pool elements: ['s', template] one piece, ['L', [elements]] several at once, ['f'] a feature (tree), ['e'] nothing;
+// proj 'r' rigid (kept at the height the jigsaw says) or 't' terrain matching (put on the ground: village houses)
 function jigElement(e) {
-  if (typeof e[0] === 'number') return { t: 's', tm: JIG.temps[e[0]], name: JIG.names[e[0]] };
-  if (e[0] === 'L') return { t: 'L', els: e[1].map(jigElement) };
-  return { t: e[0] };
+  if (typeof e[0] === 'number') return { t: 's', tm: JIG.temps[e[0]], name: JIG.names[e[0]], proj: e[1] || 'r' };
+  if (e[0] === 'L') return { t: 'L', els: e[1].map(jigElement), proj: e[2] || 'r' };
+  return { t: e[0], proj: e[1] || 'r' };
 }
 const POOLS = {};
 function jigPool(name) {   // the pool's list, each element repeated as many times as its weight (like the game)
@@ -71,27 +74,28 @@ const fits = (free, b) => b[0] >= free.box[0] && b[1] >= free.box[1] && b[2] >= 
 // build the structure that starts in chunk (cx, cz): its pieces [{ el, name, pos, rot, box, depth }], in the game's order
 function jigAssemble(ws, cx, cz, conf, startPool) {
   const rnd = chunkRand(ws, cx, cz);
+  const y0 = conf.ySample ? conf.ySample[0] + rnd.nextInt(conf.ySample[1] - conf.ySample[0] + 1) : conf.y;   // trial chambers: a random height first
   const rot = rnd.nextInt(4), P0 = jigPool(startPool); if (!P0) return null;
   const el0 = P0.list[rnd.nextInt(P0.list.length)];
   if (el0.t === 'e') return null;
-  const pos = [cx * 16, conf.y, cz * 16];
+  const pos = [cx * 16, y0, cz * 16];
   let anchor = pos;
   if (conf.anchor) { const a = jigBlocks(el0, pos, rot, rnd).find(j => j.name === conf.anchor); if (!a) return null; anchor = a.pos; }
   const off = sub3(anchor, pos), origin = sub3(pos, off);
   const start = { el: el0, name: el0.name, pos: origin, rot, box: elBox(el0, origin, rot), depth: 0 };
   const cxm = Math.trunc((start.box[0] + start.box[3]) / 2), czm = Math.trunc((start.box[2] + start.box[5]) / 2);   // Java's int division
-  const k = conf.anchor ? origin[1] : conf.y, l = start.box[1] + 1;   // the game lowers the start piece by its "ground level delta" (1)
+  const k = conf.anchor ? origin[1] : y0, l = start.box[1] + 1;   // the game lowers the start piece by its "ground level delta" (1)
   start.pos[1] += k - l; start.box[1] += k - l; start.box[4] += k - l;
   const m = k + off[1];
   const pieces = [start];
   if (conf.size > 0) {
     const D = conf.dist;
-    const free0 = { box: [cxm - D, Math.max(m - D, conf.minY), czm - D, cxm + D, Math.min(m + D + 1, conf.maxY) - 1, czm + D], holes: [start.box.slice()] };
+    const free0 = { box: [cxm - D, Math.max(m - D, conf.minY + (conf.pad || 0)), czm - D, cxm + D, Math.min(m + D + 1, conf.maxY - (conf.pad || 0)) - 1, czm + D], holes: [start.box.slice()] };
     const queue = new Map();   // placement priority → list (first in, first out); highest priority first
     const push = (s, p) => { if (!queue.has(p)) queue.set(p, []); queue.get(p).push(s); };
     const next = () => { const ks = [...queue.keys()].filter(q => queue.get(q).length).sort((a, b) => b - a); return ks.length ? queue.get(ks[0]).shift() : null; };
     const children = (piece, free, depth) => {
-      const box = piece.box, minY = box[1]; let inner = null;
+      const box = piece.box, minY = box[1], rigid = piece.el.proj !== 't'; let inner = null;
       for (const J of jigBlocks(piece.el, piece.pos, piece.rot, rnd)) {
         const dir = DIRS[J.front], out = add3(J.pos, dir), jy = J.pos[1] - minY;
         const pool = jigPool(J.pool); if (!pool && J.pool !== 'empty') continue;
@@ -114,7 +118,8 @@ function jigAssemble(ws, cx, cz, conf, startPool) {
             for (const j2 of js2) {
               if (!canAttach(J, j2)) continue;
               const at = sub3(out, j2.pos), b3 = elBox(el, at, r2);
-              const p = jy - j2.pos[1] + dir[1], q = minY + p, rr = q - b3[1];   // rigid pieces: same height as the jigsaw says
+              // rigid pieces: same height as the jigsaw says; on the ground otherwise (taken as flat, at conf.y: houses on a hill can differ)
+              const p = jy - j2.pos[1] + dir[1], q = rigid && el.proj !== 't' ? minY + p : conf.y - j2.pos[1], rr = q - b3[1];
               const b4 = [b3[0], b3[1] + rr, b3[2], b3[3], b3[4] + rr, b3[5]], at2 = [at[0], at[1] + rr, at[2]];
               if (hack > 0) { const s = Math.max(hack + 1, b4[4] - b4[1]); b4[4] = Math.max(b4[4], b4[1] + s); }
               if (!fits(space, b4)) continue;
@@ -193,8 +198,9 @@ const campSiteName = n => n.split('/').pop().replace(/^campsite_/, '').replace(/
 // ---- plans: the pieces from above and every chest, for the structure plan window (js/06c-plan.js) ----
 function jigPlanOf(kind, ws, A, conts) {
   // not the one-block pieces (mobs, gold blocks); trees only for camps
-  const pieces = A.pieces.filter(p => p.el.t !== 'e' && (kind === 'camp' || p.el.t !== 'f') && !/\/(mobs|blocks)\//.test(p.name || '')).map(p => ({ t: p.name || '', b0: [p.box[0], p.box[1], p.box[2]], b1: [p.box[3], p.box[4], p.box[5]] }));
-  const chests = conts.filter(c => c.table).map(c => ({ x: c.x, y: kind === 'camp' ? null : c.y, z: c.z, table: c.table, seed: c.seed, barrel: c.block === 'barrel',
+  const pieces = A.pieces.filter(p => p.el.t !== 'e' && (kind === 'camp' || p.el.t !== 'f') && !/\/(mobs|blocks|spawner|villagers|animals|iron_golem|cats|sheep|butcher_animals)\//.test(p.name || '')).map(p => ({ t: p.name || '', b0: [p.box[0], p.box[1], p.box[2]], b1: [p.box[3], p.box[4], p.box[5]] }));
+  const chests = conts.filter(c => c.table).map(c => ({ x: c.x, y: kind === 'camp' || kind === 'village' ? null : c.y, z: c.z, table: c.table, seed: c.seed, barrel: c.block === 'barrel',
+    pot: c.block === 'decorated_pot', disp: c.block === 'dispenser', pi: c.piece,
     secret: /secret/.test(c.table), unsure: c.unsure, biome: c.biome }));
   return { pieces, chests };
 }

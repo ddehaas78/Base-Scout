@@ -44,6 +44,37 @@ TABLES = {
     'chests/abandoned_camp_common_chest': [['26.3', None]],
     'chests/abandoned_camp_secret_chest': [['26.3', None]],
     'barrels/abandoned_camp_barrel': [['26.3', None]],
+    'chests/village/village_armorer': [['1.21.11', None]],
+    'chests/village/village_butcher': [['1.21.11', None]],
+    'chests/village/village_cartographer': [['1.21.11', None]],
+    'chests/village/village_desert_house': [['1.21.11', None]],
+    'chests/village/village_fisher': [['1.21.11', None]],
+    'chests/village/village_fletcher': [['1.21.11', None]],
+    'chests/village/village_mason': [['1.21.11', None]],
+    'chests/village/village_plains_house': [['1.21.11', None]],
+    'chests/village/village_savanna_house': [['1.21.11', None]],
+    'chests/village/village_shepherd': [['1.21.11', None]],
+    'chests/village/village_snowy_house': [['1.21.11', None]],
+    'chests/village/village_taiga_house': [['1.21.11', None]],
+    'chests/village/village_tannery': [['1.21.11', None]],
+    'chests/village/village_temple': [['1.21.11', None]],
+    'chests/village/village_toolsmith': [['1.21.11', None]],
+    'chests/village/village_weaponsmith': [['1.21.11', None]],
+    'chests/trial_chambers/corridor': [['1.21.11', None]],
+    'chests/trial_chambers/entrance': [['1.21.11', None]],
+    'chests/trial_chambers/intersection': [['1.21.11', None]],
+    'chests/trial_chambers/intersection_barrel': [['1.21.11', None]],
+    'chests/trial_chambers/supply': [['1.21.11', None]],
+    'chests/trial_chambers/reward': [['1.21.11', None]],
+    'chests/trial_chambers/reward_common': [['1.21.11', None]],
+    'chests/trial_chambers/reward_rare': [['1.21.11', None]],
+    'chests/trial_chambers/reward_unique': [['1.21.11', None]],
+    'pots/trial_chambers/corridor': [['1.21.11', None]],
+    'dispensers/trial_chambers/corridor': [['1.21.11', None]],
+    'dispensers/trial_chambers/chamber': [['1.21.11', None]],
+    'chests/underwater_ruin_big': [['1.21.11', None]],
+    'chests/underwater_ruin_small': [['1.21.11', None]],
+    'chests/woodland_mansion': [['1.21.11', None]],
 }
 keys = set()
 
@@ -65,7 +96,8 @@ SPECIAL_TEX = {'enchanted_golden_apple': 'item/golden_apple', 'copper_horse_armo
                'music_disc_flurry': 'item/music_disc_13', 'pumpkin': 'block/pumpkin_side', 'clock': 'item/clock_00', 'light_weighted_pressure_plate': 'block/gold_block',
                'sculk_catalyst': 'block/sculk_catalyst_top', 'sculk_sensor': 'block/sculk_sensor_top', 'chiseled_soulshale': 'block/soul_soil',
                'copper_axe': 'item/iron_axe', 'copper_boots': 'item/iron_boots', 'copper_chestplate': 'item/iron_chestplate', 'copper_leggings': 'item/iron_leggings',
-               'copper_spear': 'item/iron_sword', 'copper_sword': 'item/iron_sword', 'white_cushion': 'block/white_wool', 'straw_bed': 'block/hay_block_top'}
+               'copper_spear': 'item/iron_sword', 'copper_sword': 'item/iron_sword', 'white_cushion': 'block/white_wool', 'straw_bed': 'block/hay_block_top',
+               'tall_grass': 'block/tall_grass_top', 'large_fern': 'block/large_fern_top', 'tipped_arrow': 'item/arrow', 'shield': 'block/spruce_planks'}
 for _m in ('buried_treasure', 'abandoned_camp', 'buried_ancient_city', 'buried_trial_chambers', 'buried_mineshaft', 'desert_pyramid', 'jungle_pyramid', 'warm_ocean_ruins', 'woodland_mansion'):
     SPECIAL_TEX[_m + '_map'] = 'item/filled_map'
 def item(i):
@@ -186,9 +218,10 @@ def table(path, lunge):
         ents = []
         for e in p['entries']:
             t = bare(e['type'])
-            assert t in ('item', 'empty'), (path, e)
+            assert t in ('item', 'empty', 'loot_table'), (path, e)
             ok, cs = conditions(L(e.get('conditions', [])) + L(e.get('condition', [])))
             if not ok: continue   # never there (a biome check, taken as false like xpple/cubiomes)
+            if t == 'loot_table': ents.append([bare(e['value']), e.get('weight', 1), fns(e, lunge)] + ([cs] if cs else [])); continue   # another table, rolled right there
             ents.append([item(e['name']) if t == 'item' else -1, e.get('weight', 1), fns(e, lunge)] + ([cs] if cs else []))
         pf = []
         if p.get('functions') or p.get('modifier'):   # functions for every item of the pool, after the item's own
@@ -196,13 +229,13 @@ def table(path, lunge):
         pools.append([number(p['rolls']), ents] + ([pf or 0, pcs] if pcs else [pf] if pf else []))
     return pools
 
-NEW_ONLY = {'chests/bastion_treasure', 'chests/bastion_hoglin_stable'}   # these have spears (1.21.11+): no older copy to make
+NEW_ONLY = {'chests/bastion_treasure', 'chests/bastion_hoglin_stable', 'chests/village/village_weaponsmith', 'chests/underwater_ruin_big', 'chests/underwater_ruin_small'}   # these have spears (1.21.11+): no older copy to make
 OUT = {}
 for name, vers in TABLES.items():
     OUT[name] = []
     if vers[0][0] == '1.21.11' and vers[0][1] is None and name not in NEW_ONLY:   # no older copy: the same table, before Lunge existed (no spears in these)
         t = table(os.path.join(DATA, 'loot_table', name + '.json'), lunge=False)
-        assert 'spear' not in json.dumps([ITEMS[e[0]] for pl in t for e in pl[1] if e[0] >= 0]), name
+        assert 'spear' not in json.dumps([ITEMS[e[0]] for pl in t for e in pl[1] if isinstance(e[0], int) and e[0] >= 0]), name
         OUT[name].append(['1.21.6', t])
     if name == 'chests/end_city_treasure':   # 1.21.6 to 1.21.8: the 1.21.9 table without copper horse armor (copper came in 1.21.9)
         t = table(os.path.join(OLD, 'end_city_treasure.1_21_9.json'), lunge=False)
@@ -213,7 +246,7 @@ for name, vers in TABLES.items():
         OUT[name].append([first, table(path, lunge=f is None)])   # Lunge exists from 1.21.11
 
 js = ['// ---------- chest loot tables for the structure plans (generated by i18n/loot.py; do not edit) ----------',
-      '// LOOT_TABLES[name] = [[first version, pools]], a pool = [[min rolls, max rolls], entries], an entry = [item (-1 empty), weight, functions]',
+      '// LOOT_TABLES[name] = [[first version, pools]], a pool = [[min rolls, max rolls], entries], an entry = [item (-1 empty, or the name of another table to roll there), weight, functions]',
       '// a pool may have a third part: functions for every item of the pool',
       '// functions: ["c", min, max] set count | ["er", list] enchant randomly from LOOT_LISTS[list] | ["el", LOOT_FOR key, min, max] enchant with levels',
       '//   | ["f"] wear (one random number) | ["h", names] goat horn sound | ["p", name] potion | ["s", [[effect, min, max]]] stew effect',

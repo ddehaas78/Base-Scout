@@ -408,7 +408,7 @@ const turn4 = (rot, a, b) => [[a, b], [-b, a], [-a, -b], [b, -a]][rot];
 function lootStructure(key, ws, x, z, ver, biome, built) {   // built: a camp already put together (js/06d-jigsaw.js)
   ws = BigInt(ws); biome = String(biome || '').toLowerCase().replace(/ /g, '_');   // the map's name ("birch forest") → the game's id
   const minX = x & ~15, minZ = z & ~15, cx = x >> 4, cz = z >> 4;
-  const roll = c => { c.items = lootRoll(c.table, ver, c.seed, c.biome || biome); return c; };
+  const roll = c => { c.items = lootRoll(c.table, ver, c.seed, c.biome || biome, c.disp ? 9 : c.pot ? 1 : 27); return c; };
   const plan = o => { o.chests.forEach(roll); return Object.assign({ key, x, z, minX, minZ, pieces: [] }, o); };
   const saltKey = key.startsWith('bas_') ? 'bastion' : key === 'endship' ? 'endcity' : key === 'mineshaft' && /badlands/.test(biome || '') ? 'mineshaft_mesa' : key;
   if (key === 'pyramid') return lootPyramid(ws, x, z, ver);
