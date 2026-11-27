@@ -692,7 +692,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .plegend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; max-width: min(470px, calc(100vw - 80px)); font-size: 12px; color: #d8d8d8; }
 .plegend span { display: inline-flex; align-items: center; gap: 5px; }
 .plegend i { width: 14px; height: 14px; background-size: 14px 14px; image-rendering: pixelated; box-shadow: 0 0 0 1px #000; }
-.ptabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; max-height: 182px; overflow-y: auto; }
+.ptabs { position: relative; display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; max-height: 182px; overflow-y: auto; }
 /* a chest like the game's: light grey window, 9 x 3 slots */
 .mcchest { background: #c6c6c6; padding: 8px 8px 10px; width: max-content; max-width: 100%; box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 0 0 0 2px #000; }
 .mct { font-family: var(--mc); color: #404040; font-size: 13px; margin: 0 0 6px 2px; display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; width: calc(var(--slot, 36px) * 9 - 2px); }
@@ -4782,9 +4782,16 @@ function renderPlan() {
   } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
   if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">${S.note || 'No chest in this one.'}</p>`; return; }
   planSel = Math.min(planSel, S.chests.length - 1);
+  const tabs0 = document.querySelector('#planChests .ptabs'), keep = tabs0 ? tabs0.scrollTop : 0;   // the tab list keeps its scroll when a tab is picked
   $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}"><span>${chestName(S, k)}</span> ${k + 1}</button>`).join('')}</div>${chestHTML(S, planSel)}
     <p class="hint">Contents are fixed by the seed when the structure is built. Already opened chests, or chests changed by another player, won't match.</p>`;
   document.querySelectorAll('#planDlg [data-chest]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest; renderPlan(); });
+  const tabs1 = document.querySelector('#planChests .ptabs');
+  if (tabs1) {
+    tabs1.scrollTop = keep;
+    const on = tabs1.querySelector('[aria-pressed="true"]');   // picked on the plan: bring its tab into view
+    if (on && (on.offsetTop < tabs1.scrollTop || on.offsetTop + on.offsetHeight > tabs1.scrollTop + tabs1.clientHeight)) tabs1.scrollTop = on.offsetTop - 4;
+  }
 }
 function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;

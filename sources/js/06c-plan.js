@@ -186,9 +186,16 @@ function renderPlan() {
   } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
   if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">${S.note || 'No chest in this one.'}</p>`; return; }
   planSel = Math.min(planSel, S.chests.length - 1);
+  const tabs0 = document.querySelector('#planChests .ptabs'), keep = tabs0 ? tabs0.scrollTop : 0;   // the tab list keeps its scroll when a tab is picked
   $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}"><span>${chestName(S, k)}</span> ${k + 1}</button>`).join('')}</div>${chestHTML(S, planSel)}
     <p class="hint">Contents are fixed by the seed when the structure is built. Already opened chests, or chests changed by another player, won't match.</p>`;
   document.querySelectorAll('#planDlg [data-chest]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest; renderPlan(); });
+  const tabs1 = document.querySelector('#planChests .ptabs');
+  if (tabs1) {
+    tabs1.scrollTop = keep;
+    const on = tabs1.querySelector('[aria-pressed="true"]');   // picked on the plan: bring its tab into view
+    if (on && (on.offsetTop < tabs1.scrollTop || on.offsetTop + on.offsetHeight > tabs1.scrollTop + tabs1.clientHeight)) tabs1.scrollTop = on.offsetTop - 4;
+  }
 }
 function openPlan(q, M = xMap) {
   if (!q || !LOOT_KEYS.has(q.key)) return false;
