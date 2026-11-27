@@ -213,6 +213,7 @@ button.go.stop { background: var(--raised); color: var(--ink); border-color: var
 .mapnote { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); font: 600 12px var(--f-body); color: #e6efe8; background: rgba(10,14,12,.82); padding: 6px 10px; border-radius: 5px; pointer-events: none; white-space: nowrap; }
 .fdim { display: flex; flex-direction: column; gap: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
 .fdim .dimseg { grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 210px; }
+.mapcontrols .fdim .dimseg { grid-template-columns: repeat(3, minmax(0, 1fr)); min-width: 300px; }   /* Seed map: Overworld, Nether, End */
 .fdim .dimseg button { text-transform: none; letter-spacing: 0; padding: 8px 10px; }
 .dimseg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
 .dimseg button { border: 0; border-radius: 0; padding: 8px 4px; font-size: 13px; background: var(--raised); color: var(--muted); }
@@ -341,7 +342,7 @@ button.go.stop { background: var(--raised); color: var(--ink); border-color: var
   #paneFind > .status { align-self: end; }
   #paneFind.stwide { grid-template-rows: auto auto minmax(0, 1fr); }
   #paneFind.stwide > .status { grid-column: 1 / -1; }
-  #paneMap { grid-template-rows: minmax(0, 1fr) auto; }
+  #paneMap { grid-template-rows: auto minmax(0, 1fr) auto; }   /* Dimension bar, then the map and panel */
   .main { min-height: 0; align-items: stretch; grid-template-columns: 380px minmax(0, 1fr); }
   .panel { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .target { max-width: 330px; }
@@ -887,6 +888,13 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
   </section>
 
   <section class="pane" id="paneMap" role="tabpanel" aria-labelledby="tabMap" hidden>
+    <div class="controls mapcontrols">
+      <div class="fld fdim"><span>Dimension</span>
+        <div class="dimseg" role="group" aria-label="Dimension" id="dimseg">
+          <button type="button" data-dim="0" aria-pressed="true">Overworld</button><button type="button" data-dim="-1" aria-pressed="false">Nether</button><button type="button" data-dim="1" aria-pressed="false">End</button>
+        </div>
+      </div>
+    </div>
     <div class="explore">
       <aside class="panel">
         <div class="sec">
@@ -907,12 +915,6 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
           <h2>Route <span class="minibtns"><button type="button" id="zrouteBest" title="Keeps the first stop and finds the shortest way through the others">Best order</button><button type="button" id="zrouteCopy">Copy</button><button type="button" id="zrouteClear">Clear</button></span></h2>
           <div class="routelist" id="zrouteList"></div>
           <p class="hint" id="zrouteHint">Click structures on the map to add them to your route. Click one again to take it out.</p>
-        </div>
-        <div class="sec">
-          <h2>Dimension</h2>
-          <div class="dimseg" role="group" aria-label="Dimension" id="dimseg">
-            <button type="button" data-dim="0" aria-pressed="true">Overworld</button><button type="button" data-dim="-1" aria-pressed="false">Nether</button><button type="button" data-dim="1" aria-pressed="false">End</button>
-          </div>
         </div>
         <div class="sec">
           <h2>Show on map <span class="minibtns"><button type="button" id="togAll">All</button><button type="button" id="togNone">None</button></span></h2>
