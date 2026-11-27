@@ -216,6 +216,7 @@ Pour une modification, il suffit d'ouvrir le fichier concerné (pas tout le site
 | `js/03-search.js` | Lancer / arrêter la recherche, barre d'état, liste des résultats. |
 | `js/03b-seeds.js` | Le mode Find seeds (workers en parallèle, liste des seeds, Starred, Copy / Use). |
 | `js/12-mcselect.js` | Les listes déroulantes au style du site (la liste native reste dessous : valeur et événements inchangés). |
+| `js/06f-biomeshow.js` | Seed map, onglet Biomes de « Show on map » : liste des biomes et contour jaune sur la carte. |
 | `js/13-tooltip.js` | La bulle du nom complet quand la souris reste 0,33 s sur un bouton ou une pastille, et la bulle des objets dans les coffres (tout de suite). |
 | `js/11-i18n.js` | La langue du site : traduit les textes affichés (généré par `i18n/build_js.py`). |
 | `js/03c-fixed.js` | La case Fixed spots (structures et biomes à des coordonnées précises) et Crack the exact seed. |
@@ -357,3 +358,5 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v81 | Bouton « ✓ Done » de la même hauteur que « Done » (et que « Chests ») |
 | v82 | Icônes des structures : les vraies textures sont gardées dans le navigateur, donc au rechargement elles s'affichent tout de suite (plus de flash des icônes dessinées) |
 | v83 | Go to : en End, la case « These are … coordinates » est cachée mais garde sa place, donc le panneau ne bouge plus en changeant de dimension |
+| v84 | Seed map : « Show on map » a deux onglets, Structures et Biomes ; un clic sur un biome l'entoure en jaune partout sur la carte (plusieurs à la fois possible, choix gardé) |
+| v85 | Modèles pour contribuer : `CONTRIBUTING.md` (comment ouvrir une issue et proposer un changement), modèles d'issue Bug et Idea, modèle de pull request (dossier `.github`) |

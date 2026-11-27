@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: How the site works (README) / Comment marche le site
+    url: https://github.com/ddehaas78/Base-Scout#readme
+    about: Read this first, your question may already be answered. / À lire d'abord.

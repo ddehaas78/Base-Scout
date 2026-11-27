@@ -163,8 +163,13 @@
           <p class="hint" id="zrouteHint">Click structures on the map to add them to your route. Click one again to take it out.</p>
         </div>
         <div class="sec">
-          <h2>Show on map <span class="minibtns"><button type="button" id="togAll">All</button><button type="button" id="togNone">None</button></span></h2>
+          <h2>Show on map <span class="tabs" role="tablist" id="showTabs">
+            <button type="button" role="tab" id="showS" aria-selected="true">Structures</button>
+            <button type="button" role="tab" id="showB" aria-selected="false">Biomes</button></span></h2>
+          <div class="minibtns showall"><button type="button" id="togAll">All</button><button type="button" id="togNone">None</button></div>
           <div class="toggles" id="toggles"></div>
+          <div class="toggles btoggles" id="btoggles" hidden></div>
+          <p class="hint" id="bHint" hidden>Pick biomes: each one gets a yellow outline on the map. Click again to take it off.</p>
           <div class="donebar"><label class="check" title="Hide the structures you marked as done (right-click an icon, or the button in its chest window)"><input type="checkbox" id="doneHide"> Hide done</label><span class="donecount" id="doneCount"></span></div>
           <p class="hint" id="togHint">Structures appear once you zoom in to about 20,000 blocks across. Strongholds show at any zoom.</p>
         </div>

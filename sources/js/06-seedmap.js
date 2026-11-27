@@ -22,6 +22,7 @@ const xMap = MapView({
   keys: (S, span) => dimKeys().filter(k => shownKeys.has(k) && spanOK(k, span)).sort(),
   overlay: M => {
     const { ctx, cv } = M, d = drawScale(), v = M.view;
+    if (typeof drawBiomeOutlines === 'function') drawBiomeOutlines(M);   // Show on map > Biomes (js/06f-biomeshow.js)
     $('xempty').hidden = !!M.layers.length;
     if (!$('xhov').textContent) setText($('xhov'), 'Point at the map to read its coordinates');
     $('xhud').hidden = !M.layers.length || !$('xhud').textContent; $('xhov').hidden = !M.layers.length;
@@ -234,7 +235,7 @@ function setDim(d, quiet) {
   if (f) { xMap.centerOn(Math.round(cx * f), Math.round(cz * f)); if (pin) pin = { x: Math.floor(pin.x * f), z: Math.floor(pin.z * f), label: 'Same spot in the ' + DIMS[d].name }; }
   else { xMap.fitTo(0, 0, d === 1 ? 1500 : 2500); pin = null; }
   try { localStorage.setItem('basescout.dim', String(d)); } catch {}
-  xMap.reset(); renderDimUI(); renderToggles(); renderPin();
+  xMap.reset(); renderDimUI(); renderToggles(); renderPin(); if (typeof renderShowTab === 'function') renderShowTab();
   setText($('xhov'), '');   // the next draw puts the placeholder back
   if (!quiet) { xMap.draw(); xMap.request(true); }
 }
