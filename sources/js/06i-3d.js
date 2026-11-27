@@ -113,11 +113,25 @@ function d3NoCeilings(blocks) {
   }
   return blocks.filter((b, i) => !off.has(i));
 }
+// the warning before the 3D view, in the site's own look (not the browser's grey box): resolves true for OK
+function d3Ask(v) {
+  return new Promise(done => {
+    const old = $('p3dask'); if (old) old.remove();
+    const a = document.createElement('div'); a.className = 'p3dask'; a.id = 'p3dask';
+    a.innerHTML = `<div class="panel p3daskbox" role="alertdialog" aria-labelledby="p3daskT"><h3 id="p3daskT">${escH(tr('3D view'))}</h3><p>${escH(tr(D3_LIMITS))}</p>
+      <div class="p3daskbtns"><button type="button" id="p3daskOk">OK</button><button type="button" id="p3daskNo">${escH(tr('Cancel'))}</button></div></div>`;
+    v.append(a);
+    const end = ok => { a.remove(); done(ok); };
+    $('p3daskOk').onclick = () => end(true); $('p3daskNo').onclick = () => end(false);
+    a.addEventListener('pointerdown', e => { e.stopPropagation(); if (e.target === a) end(false); });
+    $('p3daskOk').focus();
+  });
+}
 let D3 = null;   // the open 3D view
 const has3d = S => S.key !== 'pyramid' && S.key !== 'treasure' && S.pieces.length > 0;
 async function d3Open(S) {
-  if (!confirm(tr(D3_LIMITS))) return;
   const v = $('pview'); if (!v) return;
+  if (!await d3Ask(v)) return;
   d3Close();
   const box = document.createElement('div'); box.className = 'p3d'; box.id = 'p3d';
   box.innerHTML = `<canvas id="p3dc"></canvas><div class="p3dmarks" id="p3dmarks"></div><p class="p3dmsg" id="p3dmsg">${escH(tr('Loading the 3D view…'))}</p>

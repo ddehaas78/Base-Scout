@@ -371,3 +371,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v96 | Vérification des coffres en 3D contre le plan : avant-poste (place exacte du coffre dans la tour assemblée) et portail en ruine (place exacte du coffre depuis le fichier du portail, au lieu du milieu) corrigés ; clic gauche tenu tourne autour du milieu de la structure ; vue 3D en salles simples pour forts, puits de mine, forteresses et temples de la jungle |
 | v97 | Fenêtre des plans plus grande (presque tout l'écran) ; vue 3D : seulement clic gauche (tourner autour du centre), clic droit (regarder autour sur place) et molette (avancer / reculer) |
 | v98 | Vue 3D : la molette avance moins vite ; le message dit que les fichiers du jeu sont chargés dans le navigateur, rien n'est enregistré dans les dossiers |
+| v99 | L'avertissement avant la vue 3D est une fenêtre aux couleurs du site (boutons OK / Annuler) au lieu de la boîte grise du navigateur |
