@@ -155,9 +155,11 @@ function renderPin() {
     <div class="sub">${[pin.label, biome, fmt(Math.hypot(pin.x, pin.z)) + ' from 0, 0'].filter(Boolean).join(' · ')}</div>
     ${shipNote}${gateNote}${wildNote}${basNote}${minorNote}<div class="actions">${copies}${jump}
       ${xDim !== 1 ? `<button type="button" id="pinFind" title="Search for spots starting here, in Spot finder">Find spots here</button>` : ''}
-      ${pin.q && LOOT_KEYS.has(pin.q.key) ? `<button type="button" id="pinPlan" title="Plan from above and what is in each chest (or double-click the structure)">Chests</button>` : ''}</div>`;
+      ${pin.q && LOOT_KEYS.has(pin.q.key) ? `<button type="button" id="pinPlan" title="Plan from above and what is in each chest (or double-click the structure)">Chests</button>` : ''}
+      ${pin.q && typeof isDone === 'function' ? (isDone(pin.q.key, pin.q) ? `<button type="button" id="pinDone" class="on" title="Click to undo">✓ Done</button>` : `<button type="button" id="pinDone" title="Tick it on the maps (or right-click / double-click the structure)">Mark as done</button>`) : ''}</div>`;
   box.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
   if ($('pinPlan')) $('pinPlan').onclick = () => openPlan(pin.q);
+  if ($('pinDone')) $('pinDone').onclick = () => { setDone(pin.q.key, pin.q, !isDone(pin.q.key, pin.q)); renderPin(); };
   if ($('pinJump')) $('pinJump').onclick = () => {
     const to = g.key === 'gateway' ? { key: 'gatexit', x: g.dx, z: g.dz, n: g.n, sx: g.x, sz: g.z } : { key: 'gateway', x: g.sx, z: g.sz, n: g.n, dx: g.x, dz: g.z };
     xMap.centerOn(to.x, to.z);

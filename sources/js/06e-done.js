@@ -41,23 +41,28 @@ $('planDone').onclick = () => { if (planQ) setDone(planQ.key, planQ, !isDone(pla
 const doneMenu = document.createElement('div');
 doneMenu.className = 'panel donemenu'; doneMenu.hidden = true; document.body.appendChild(doneMenu);
 const closeDoneMenu = () => { doneMenu.hidden = true; };
+// the small menu at the pointer: done / undo, and the chests when the structure has some
+function showDoneMenu(s, M, cx, cy) {
+  const on = isDone(s.key, s), z = uiZoom();
+  doneMenu.innerHTML = `<div class="dmt">${escH(s.name)} <span class="dmxz">X ${s.x} · Z ${s.z}</span></div>
+    <button type="button" data-a="done"${on ? ' class="on"' : ''}>${on ? '✓ Done (click to undo)' : 'Mark as done'}</button>
+    ${LOOT_KEYS.has(s.key) ? '<button type="button" data-a="open">Open chests</button>' : ''}`;
+  doneMenu.style.left = (cx / z + 6) + 'px'; doneMenu.style.top = (cy / z + 6) + 'px';
+  doneMenu.hidden = false;
+  const w = doneMenu.offsetWidth, h = doneMenu.offsetHeight;   // keep it on screen
+  if (cx / z + 6 + w > innerWidth / z) doneMenu.style.left = (cx / z - w - 6) + 'px';
+  if (cy / z + 6 + h > innerHeight / z) doneMenu.style.top = (cy / z - h - 6) + 'px';
+  doneMenu.querySelector('[data-a=done]').onclick = () => { setDone(s.key, s, !on); closeDoneMenu(); if (typeof pin !== 'undefined' && pin && pin.q) renderPin(); };
+  const o = doneMenu.querySelector('[data-a=open]'); if (o) o.onclick = () => { closeDoneMenu(); openPlan(s, M); };
+  return true;
+}
+// right-click a structure on a map (any structure); double-click does the same for structures without chests (js/06c-plan.js)
 function doneOnContext(M, keys) {
   M.cv.addEventListener('contextmenu', e => {
     const r = M.cv.getBoundingClientRect(), d = devicePixelRatio || 1;
     const s = structAt(M, keys(), (e.clientX - r.left) * d, (e.clientY - r.top) * d, 18);
     if (!s) return;
-    e.preventDefault();
-    const on = isDone(s.key, s), z = uiZoom();
-    doneMenu.innerHTML = `<div class="dmt">${escH(s.name)} <span class="dmxz">X ${s.x} · Z ${s.z}</span></div>
-      <button type="button" data-a="done"${on ? ' class="on"' : ''}>${on ? '✓ Done (click to undo)' : 'Mark as done'}</button>
-      ${LOOT_KEYS.has(s.key) ? '<button type="button" data-a="open">Open chests</button>' : ''}`;
-    doneMenu.style.left = (e.clientX / z + 6) + 'px'; doneMenu.style.top = (e.clientY / z + 6) + 'px';
-    doneMenu.hidden = false;
-    const w = doneMenu.offsetWidth, h = doneMenu.offsetHeight;   // keep it on screen
-    if (e.clientX / z + 6 + w > innerWidth / z) doneMenu.style.left = (e.clientX / z - w - 6) + 'px';
-    if (e.clientY / z + 6 + h > innerHeight / z) doneMenu.style.top = (e.clientY / z - h - 6) + 'px';
-    doneMenu.querySelector('[data-a=done]').onclick = () => { setDone(s.key, s, !on); closeDoneMenu(); };
-    const o = doneMenu.querySelector('[data-a=open]'); if (o) o.onclick = () => { closeDoneMenu(); openPlan(s, M); };
+    e.preventDefault(); showDoneMenu(s, M, e.clientX, e.clientY);
   });
 }
 document.addEventListener('pointerdown', e => { if (!doneMenu.hidden && !doneMenu.contains(e.target)) closeDoneMenu(); }, true);

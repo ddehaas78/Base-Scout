@@ -212,7 +212,8 @@ function planOnDblclick(M, keys, radius, routeOn) {
     if (routeOn()) return;   // in route mode, clicks add stops
     const r = M.cv.getBoundingClientRect(), d = devicePixelRatio || 1;
     const s = structAt(M, keys(), (e.clientX - r.left) * d, (e.clientY - r.top) * d, radius);
-    if (s && openPlan(s, M)) { e.preventDefault(); e.stopPropagation(); }
+    if (!s) return;
+    if (LOOT_KEYS.has(s.key) ? openPlan(s, M) : (typeof showDoneMenu === 'function' && showDoneMenu(s, M, e.clientX, e.clientY))) { e.preventDefault(); e.stopPropagation(); }   // no chests: the "Mark as done" menu
   }, true);
 }
 planOnDblclick(xMap, () => shownKeys, 18, () => typeof seedRoute !== 'undefined' && seedRoute.on);
