@@ -285,9 +285,15 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .planhead h2 .sub { color: #c8c8c8; font-size: 14px; margin-left: 8px; }
 #planClose { padding: 2px 12px !important; font-size: 18px; }
 /* the plan takes the room left, the chest keeps its size: the window never scrolls sideways */
-.planbody { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; }
+.planbody { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: stretch; }
+/* the right column, from the bottom up: the filter, the chest's contents, then the list of containers taking the room left */
+#planChests { display: flex; flex-direction: column; }
+#planChests .ptabs { flex: 1 1 0; min-height: 70px; max-height: none; align-content: start; display: grid; grid-template-columns: repeat(3, 1fr); }   /* 3 a row, all the same width */
+#planChests .ptabs button { min-width: 0; padding-left: 4px !important; padding-right: 4px !important; text-align: center; justify-content: center; white-space: nowrap; }
+
+#planChests .pfilter { margin-top: 10px; }
 .planbody > .sec { min-width: 0; }
-@media (max-width: 760px) { .planbody { grid-template-columns: minmax(0, 1fr); } .pview { height: clamp(160px, calc(100vh / var(--ui) - 640px), 320px); } }
+@media (max-width: 760px) { .planbody { grid-template-columns: minmax(0, 1fr); } #planChests .ptabs { flex: none; max-height: 182px; } .pview { height: clamp(160px, calc(100vh / var(--ui) - 640px), 320px); } }
 .pgridwrap { position: relative; padding-top: 16px; width: max-content; }
 .pnorth { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-family: var(--mc); color: #ffff55; font-size: 12px; }
 .pgrid { display: grid; grid-template-columns: repeat(21, 15px); grid-template-rows: repeat(21, 15px); box-shadow: 0 0 0 2px #000; image-rendering: pixelated; }
@@ -339,6 +345,9 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .plegend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; max-width: min(470px, calc(100vw - 80px)); font-size: 12px; color: #d8d8d8; }
 .plegend span { display: inline-flex; align-items: center; gap: 5px; }
 .plegend i { width: 14px; height: 14px; background-size: 14px 14px; image-rendering: pixelated; box-shadow: 0 0 0 1px #000; }
+.pfilter { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 2px solid rgba(0,0,0,.45); font-size: 12px; color: #e0e0e0; }
+.pfilter .pft { font-family: var(--mc); color: #fff; text-shadow: var(--shadow); }
+.pfilter .check { padding: 0; }
 .ptabs { position: relative; display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; max-height: 182px; overflow-y: auto; }
 /* a chest like the game's: light grey window, 9 x 3 slots */
 .mcchest { background: #c6c6c6; padding: 8px 8px 10px; width: max-content; max-width: 100%; box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 0 0 0 2px #000; }
@@ -351,7 +360,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .slot img { width: calc(var(--slot, 36px) - 4px); height: calc(var(--slot, 36px) - 4px); image-rendering: pixelated; }
 .slot b { position: absolute; right: 2px; bottom: 0; font: 13px var(--mc); font-weight: normal; color: #fff; text-shadow: 2px 2px 0 #3f3f3f; }
 .slot.glint img { filter: drop-shadow(0 0 2px #b46cff) drop-shadow(0 0 1px #d9a6ff); }
-#planChests .hint { margin: 10px 0 0; }
+#planChests > .hint { margin: 8px 0; }
 /* name tooltip after 1 s on a button or chip (js/13-tooltip.js): the game's item tooltip, dark with a purple edge */
 .mctip { position: fixed; z-index: 200; pointer-events: none; max-width: 320px; padding: 5px 8px 6px; font: 13px/1.35 var(--mc); color: #fff; text-shadow: 2px 2px 0 #3f3f3f;
   background: rgba(16, 0, 16, .94); border: 2px solid rgba(16, 0, 16, .94); box-shadow: inset 0 0 0 2px #2a0a5c, inset 0 2px 0 2px #5000ff40; outline: 0; white-space: normal; }

@@ -4,7 +4,9 @@
 const LOOT_FROM = '1.21.6';   // chest contents are worked out from this version
 const texUrl = (path, k = 0) => `${TEX_SOURCES[k]}${path}.png`;
 const texBg = path => `background-image:url('${texUrl(path)}'),url('${texUrl(path, 1)}')`;   // second source if the first fails
-let planCur = null, planSel = 0;
+let planCur = null, planSel = 0, planHide = new Set();   // planHide: kinds of container left out by the filter ("Pot", "Dispenser"...)
+const TAB_SHORT = { Dispenser: 'Disp.', 'Secret chest': 'Secret', 'Ship chest': 'Ship' };   // shorter names in the list (3 a row)
+const planShown = (S, j) => !planHide.has(chestName(S, j));
 
 // desert pyramid from above, in its own directions (front with the two towers and the door at local z = 0)
 function pyramidCell(lx, lz) {
@@ -188,9 +190,14 @@ function renderPlan() {
   } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
   if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">${S.note || 'No chest in this one.'}</p>`; return; }
   planSel = Math.min(planSel, S.chests.length - 1);
+  if (!planShown(S, planSel)) { const k = S.chests.findIndex((c, j) => planShown(S, j)); if (k >= 0) planSel = k; }   // the picked one was filtered out
+  document.querySelectorAll('#planMap .pchest').forEach(b => { b.hidden = !planShown(S, +b.dataset.chest); b.classList.toggle('on', +b.dataset.chest === planSel); });
+  const kinds = [...new Set(S.chests.map((c, j) => chestName(S, j)))];
   const tabs0 = document.querySelector('#planChests .ptabs'), keep = tabs0 ? tabs0.scrollTop : 0;   // the tab list keeps its scroll when a tab is picked
-  $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}"><span>${chestName(S, k)}</span> ${k + 1}</button>`).join('')}</div>${chestHTML(S, planSel)}
-    <p class="hint">Contents are fixed by the seed when the structure is built. Already opened chests, or chests changed by another player, won't match.</p>`;
+  $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => planShown(S, k) ? `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}" title="${escH(chestName(S, k))} ${k + 1}"><span>${TAB_SHORT[chestName(S, k)] || chestName(S, k)}</span> ${k + 1}</button>` : '').join('')}</div>
+    <p class="hint">Contents are fixed by the seed when the structure is built. Already opened chests, or chests changed by another player, won't match.</p>${planShown(S, planSel) ? chestHTML(S, planSel) : ''}
+    ${kinds.length > 1 ? `<div class="pfilter" role="group" aria-label="Show"><span class="pft">Show</span>${kinds.map(k => `<label class="check"><input type="checkbox" data-kind="${escH(k)}"${planHide.has(k) ? '' : ' checked'}> <span>${k}</span> (${S.chests.filter((c, j) => chestName(S, j) === k).length})</label>`).join('')}</div>` : ''}`;
+  document.querySelectorAll('#planChests [data-kind]').forEach(b => b.onchange = () => { if (b.checked) planHide.delete(b.dataset.kind); else planHide.add(b.dataset.kind); renderPlan(); if (typeof d3Draw === 'function') d3Draw(); });   // the filter: which kinds of container to show
   document.querySelectorAll('#planDlg [data-chest]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest; renderPlan(); if (typeof d3Draw === 'function') d3Draw(); });
   const tabs1 = document.querySelector('#planChests .ptabs');
   if (tabs1) {
@@ -216,7 +223,7 @@ function openPlan(q, M = xMap) {
   return true;
 }
 function showPlan(p) {
-  planCur = p; planSel = 0; if (typeof d3Close === 'function') d3Close();
+  planCur = p; planSel = 0; planHide = new Set(); if (typeof d3Close === 'function') d3Close();
   if (!planCur) { toast('No plan for this structure in this version.', 'bad'); return true; }
   $('planDlg').hidden = false; renderPlan(); renderDoneBtn(); $('planClose').focus();
   return true;

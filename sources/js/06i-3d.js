@@ -217,7 +217,7 @@ function d3Draw() {
     const f = 1 / Math.tan(35 * Math.PI / 180), asp = w / h;
     $('p3dmarks').querySelectorAll('[data-chest3]').forEach(b => {
       const j = +b.dataset.chest3, q = me.chestPos[j]; b.classList.toggle('on', j === planSel);
-      if (!q) { b.hidden = true; return; }
+      if (!q || !planShown(planCur, j)) { b.hidden = true; return; }
       const vx = view[0] * q[0] + view[4] * q[1] + view[8] * q[2] + view[12], vy = view[1] * q[0] + view[5] * q[1] + view[9] * q[2] + view[13], vz = view[2] * q[0] + view[6] * q[1] + view[10] * q[2] + view[14];
       if (vz > -0.2) { b.hidden = true; return; }   // behind the camera
       b.hidden = false; b.style.left = ((f / asp * vx / -vz + 1) / 2 * w) + 'px'; b.style.top = ((1 - f * vy / -vz) / 2 * h) + 'px';
