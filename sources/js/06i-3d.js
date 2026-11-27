@@ -5,7 +5,7 @@
 const D3_LIB = ['https://cdn.jsdelivr.net/npm/deepslate@0.27.3/dist/deepslate.umd.cjs', 'https://unpkg.com/deepslate@0.27.3/dist/deepslate.umd.cjs'];
 const MCMETA = 'https://raw.githubusercontent.com/misode/mcmeta/';
 const D3_SKIP = new Set(['minecraft:air', 'minecraft:structure_void', 'minecraft:jigsaw', 'minecraft:structure_block', 'minecraft:cave_air']);
-const D3_LIMITS = "3D view: villages, camps and outposts stand on flat ground (the real hills are not known here). Strongholds, mineshafts, fortresses and jungle temples are built by the game's code, not from files: they show as simple rooms. Big structures, like ancient cities, can be slow on a weak computer. The first time, about 4 MB of game files are downloaded.";
+const D3_LIMITS = "3D view: villages, camps and outposts stand on flat ground (the real hills are not known here). Strongholds, mineshafts, fortresses and jungle temples are built by the game's code, not from files: they show as simple rooms. Big structures, like ancient cities, can be slow on a weak computer. The first time, about 4 MB of game files are loaded from the internet (only into the browser, nothing is saved in your folders).";
 
 function d3Script(urls) {
   return new Promise((ok, bad) => {
@@ -120,7 +120,7 @@ async function d3Open(S) {
   const v = $('pview'); if (!v) return;
   d3Close();
   const box = document.createElement('div'); box.className = 'p3d'; box.id = 'p3d';
-  box.innerHTML = `<canvas id="p3dc"></canvas><div class="p3dmarks" id="p3dmarks"></div><div class="p3dcross"></div><p class="p3dhint" id="p3dhint"></p><p class="p3dmsg" id="p3dmsg">${escH(tr('Loading the 3D view…'))}</p>
+  box.innerHTML = `<canvas id="p3dc"></canvas><div class="p3dmarks" id="p3dmarks"></div><p class="p3dmsg" id="p3dmsg">${escH(tr('Loading the 3D view…'))}</p>
     <div class="p3dbar"><label class="check" for="p3droof"><input type="checkbox" id="p3droof" checked> <span>${escH(tr('No ceilings'))}</span></label><label>${escH(tr('Cut above'))} <input type="range" id="p3dcut" min="0" max="1" value="1"></label><button type="button" id="p3dback">${escH(tr('Top view'))}</button></div>`;
   v.append(box);
   $('p3dback').onclick = d3Close;
@@ -148,60 +148,25 @@ async function d3Open(S) {
     $('p3droof').onchange = () => { R.setStructure(build(+cut.value)); d3Draw(); };
     let t = 0; cut.oninput = () => { clearTimeout(t); t = setTimeout(() => { R.setStructure(build(+cut.value)); d3Draw(); }, 120); };   // rebuilt when the slider stops
     // camera: it looks at "center" from "dist" away. Left button: turn around what it looks at; right button: look around
-    // from where it stands; wheel: walk forward or back (no stop); Shift + left: slide
+    // from where it stands; wheel: walk forward or back (no stop)
     const axes = () => { const M = m4mul(m4rx(me.pitch), m4ry(me.yaw)); return { fwd: [-M[2], -M[6], -M[10]], right: [M[0], M[4], M[8]], up: [M[1], M[5], M[9]] }; };
     const add = (a, v, k) => { a[0] += v[0] * k; a[1] += v[1] * k; a[2] += v[2] * k; };
     let drag = null;
     const mid = [size[0] / 2, size[1] / 2, size[2] / 2];
-    // a click (no drag) locks the mouse in the view, like the game: the mouse looks around, the wheel and W A S D move,
-    // Space / Shift go up / down, a click picks the chest under the crosshair; Escape gives the mouse back
-    let down = null;
-    const hint = () => { const h = $('p3dhint'); if (h) h.textContent = tr(me.locked ? 'Mouse: look · W A S D, wheel: move · Space / Shift: up / down · Click: the chest in the crosshair · Escape: free the mouse' : 'Click in the view to look around like in the game'); };
-    hint();
-    me.onLock = () => {
-      me.locked = document.pointerLockElement === cv; $('p3d') && $('p3d').classList.toggle('locked', me.locked); hint();
-      if (!me.locked) { me.keys = {}; D3_UNLOCKED = Date.now(); }
-    };
-    document.addEventListener('pointerlockchange', me.onLock);
-    me.onMouse = e => {
-      if (!me.locked) return;
-      me.yaw += e.movementX * 0.0025; me.pitch = Math.max(-1.55, Math.min(1.55, me.pitch + e.movementY * 0.0025));
-      const eye = me.center.slice(); add(eye, axes().fwd, -me.dist); me.center = eye; add(me.center, axes().fwd, me.dist);   // look from where the eye is
-      d3Draw();
-    };
-    document.addEventListener('mousemove', me.onMouse);
-    me.keys = {};
-    me.onKey = e => {
-      if (!me.locked) return;
-      const k = e.code; if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyZ', 'KeyQ'].includes(k)) return;
-      e.preventDefault(); me.keys[k] = e.type === 'keydown'; if (e.type === 'keydown') d3Walk();
-    };
-    document.addEventListener('keydown', me.onKey); document.addEventListener('keyup', me.onKey);
-    me.walk = () => {   // W A S D (Z Q S D too), Space, Shift: one step per frame while held
-      const K = me.keys, { fwd, right } = axes(), sp = Math.max(0.4, step / 5), flat = Math.hypot(fwd[0], fwd[2]) || 1, f = [fwd[0] / flat, 0, fwd[2] / flat];
-      let moved = false;
-      if (K.KeyW || K.KeyZ) { add(me.center, f, sp); moved = true; } if (K.KeyS) { add(me.center, f, -sp); moved = true; }
-      if (K.KeyD) { add(me.center, right, sp); moved = true; } if (K.KeyA || K.KeyQ) { add(me.center, right, -sp); moved = true; }
-      if (K.Space) { me.center[1] += sp; moved = true; } if (K.ShiftLeft || K.ShiftRight) { me.center[1] -= sp; moved = true; }
-      return moved;
-    };
     cv.addEventListener('pointerdown', e => {
-      if (me.locked) { if (e.button === 0) d3PickCenter(); return; }
-      down = [e.clientX, e.clientY, e.button];
       drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId);
     });
     cv.addEventListener('pointermove', e => {
-      if (!drag || me.locked) return;
-      const look = e.buttons & 2, pan = !look && (e.buttons & 1) && e.shiftKey, turn = !look && (e.buttons & 1) && !e.shiftKey;
-      if (!look && !pan && !turn) { drag = null; return; }   // the button was let go outside the view
+      if (!drag) return;
+      const look = e.buttons & 2, turn = !look && (e.buttons & 1);
+      if (!look && !turn) { drag = null; return; }   // the button was let go outside the view
       const dx = e.clientX - drag[0], dy = e.clientY - drag[1]; drag[0] = e.clientX; drag[1] = e.clientY;
-      if (pan) { const { right, up } = axes(), k = me.dist / 500; add(me.center, right, -dx * k); add(me.center, up, dy * k); }
-      else if (look) {   // the eye stays put, the point it looks at moves around it
+      if (look) {   // the eye stays put, the point it looks at moves around it
         const eye = me.center.slice(); add(eye, axes().fwd, -me.dist);
         me.yaw += dx * 0.006; me.pitch = Math.max(-1.5, Math.min(1.5, me.pitch + dy * 0.006));
         me.center = eye; add(me.center, axes().fwd, me.dist);
       } else {
-        if (!drag[2]) {   // left, first move: turn around the structure's middle, from where the eye is now (a plain click locks instead)
+        if (!drag[2]) {   // left, first move: turn around the structure's middle, from where the eye is now 
           drag[2] = true; const eye = me.center.slice(); add(eye, axes().fwd, -me.dist);
           const d = [mid[0] - eye[0], mid[1] - eye[1], mid[2] - eye[2]], n = Math.hypot(...d) || 1;
           me.dist = n; me.center = mid.slice(); me.pitch = Math.asin(Math.max(-1, Math.min(1, -d[1] / n))); me.yaw = Math.atan2(d[0], -d[2]);
@@ -211,10 +176,9 @@ async function d3Open(S) {
       d3Draw();
     });
     const stop = () => { drag = null; };
-    cv.addEventListener('pointerup', e => { if (down && down[2] === 0 && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4 && cv.requestPointerLock) cv.requestPointerLock(); down = null; });
     cv.addEventListener('pointerup', stop); cv.addEventListener('pointercancel', stop); cv.addEventListener('lostpointercapture', stop);
     cv.addEventListener('contextmenu', e => e.preventDefault());
-    const step = Math.max(2, Math.max(size[0], size[2]) * 0.04);
+    const step = Math.max(1, Math.max(size[0], size[2]) * 0.015);
     cv.addEventListener('wheel', e => { e.preventDefault(); add(me.center, axes().fwd, -Math.sign(e.deltaY) * step); d3Draw(); }, { passive: false });
     me.ro = new ResizeObserver(() => d3Draw()); me.ro.observe(cv);
     d3Draw();
@@ -246,17 +210,7 @@ function d3Draw() {
     });
   });
 }
-let D3_UNLOCKED = 0;   // when Escape last freed the mouse (that Escape must not close the plan too)
-function d3Walk() { const me = D3; if (!me || me.walking) return; me.walking = true; const go = () => { if (D3 !== me || !me.walk()) { me.walking = false; return; } d3Draw(); requestAnimationFrame(go); }; requestAnimationFrame(go); }
-function d3PickCenter() {   // the chest whose number is nearest the crosshair
-  const me = D3; if (!me || !me.cv) return;
-  const w = me.cv.clientWidth / 2, h = me.cv.clientHeight / 2, r = me.cv.getBoundingClientRect();
-  let best = -1, bd = 40;
-  $('p3dmarks').querySelectorAll('[data-chest3]').forEach(b => { if (b.hidden) return; const d = Math.hypot(parseFloat(b.style.left) - w, parseFloat(b.style.top) - h); if (d < bd) { bd = d; best = +b.dataset.chest3; } });
-  if (best >= 0) { planSel = best; renderPlan(); d3Draw(); }
-}
 function d3Close() {
-  if (D3) { if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock(); for (const [t, f] of [['pointerlockchange', D3.onLock], ['mousemove', D3.onMouse], ['keydown', D3.onKey], ['keyup', D3.onKey]]) if (f) document.removeEventListener(t, f); }
   if (D3 && D3.ro) D3.ro.disconnect();
   D3 = null; const b = $('p3d'); if (b) b.remove();
 }

@@ -317,14 +317,6 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .p3dmarks .pchest { position: absolute; transform: translate(-50%, -50%); width: 17px; height: 15px; font: 9px/15px var(--mc) !important; }
 .p3dmarks .pchest[hidden] { display: none; }
 .p3dmarks .pchest.on { z-index: 3; outline: 2px solid #ffff55; outline-offset: 1px; }
-/* in the game's way: a click locks the mouse in the view, a crosshair in the middle; Escape gives the mouse back */
-.p3dcross { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; pointer-events: none; display: none; mix-blend-mode: difference; }
-.p3dcross::before, .p3dcross::after { content: ''; position: absolute; background: #fff; }
-.p3dcross::before { left: 9px; top: 0; width: 2px; height: 20px; }
-.p3dcross::after { left: 0; top: 9px; width: 20px; height: 2px; }
-.p3d.locked .p3dcross { display: block; }
-.p3d.locked canvas { cursor: none; }
-.p3dhint { position: absolute; left: 8px; top: 8px; margin: 0; font: 11px var(--mc); color: #ddd; text-shadow: 1px 1px 0 #000; pointer-events: none; }
 .p3dmsg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font: 13px var(--mc); color: #ddd; text-align: center; padding: 20px; }
 .p3dbar { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; gap: 10px; align-items: center; justify-content: space-between; font: 12px var(--mc); color: #eee; text-shadow: 1px 1px 0 #000; }
 .p3dbar label { display: flex; gap: 8px; align-items: center; white-space: nowrap; }

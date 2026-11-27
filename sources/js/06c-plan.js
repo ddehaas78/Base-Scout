@@ -225,7 +225,7 @@ const closePlan = () => { $('planDlg').hidden = true; planCur = null; if (typeof
 addEventListener('resize', () => { if (!$('planDlg').hidden && $('pview')) pvFit(); });   // the view follows the window's size
 $('planClose').onclick = closePlan;
 $('planDlg').addEventListener('click', e => { if (e.target === $('planDlg')) closePlan(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('planDlg').hidden && !document.pointerLockElement && Date.now() - (typeof D3_UNLOCKED !== 'undefined' ? D3_UNLOCKED : 0) > 600) closePlan(); });   // not the Escape that frees the 3D view's mouse
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('planDlg').hidden) closePlan(); });
 // double-click a structure on the Seed map, or on the Spot finder map beside the results
 function planOnDblclick(M, keys, radius, routeOn) {
   M.cv.addEventListener('dblclick', e => {   // same pointer maths as the map's own click (js/04-maps.js)
