@@ -207,5 +207,5 @@ LOOT_MORE.camp = (ws, x, z, ver, biome, built) => {
     + (site ? ` · <span>Campsite</span> « ${campSiteName(site.name)} »: ${campKindsText(inSite)}` : '');
   const P = jigPlanOf('camp', ws, C.A, C.conts);
   P.pieces.forEach(p => { p.t = /\/tent\//.test(p.t) ? 0 : /\/camp\//.test(p.t) ? 1 : 2; });
-  return { info, secret: C.conts.some(c => /secret/.test(c.table)), ...P };
+  return { ground: 'block/grass_block_top|7cbd6b', info, secret: C.conts.some(c => /secret/.test(c.table)), ...P };
 };

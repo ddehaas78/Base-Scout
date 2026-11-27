@@ -195,10 +195,13 @@ async function campResolve(ws, x, z, guess) {   // which camp the game built her
 // the short name of a campsite piece: "barrel 7", "special 3", "taiga 2"
 const campSiteName = n => n.split('/').pop().replace(/^campsite_/, '').replace(/^default_/, '').replace(/_(\d+)$/, ' $1').replace(/_/g, ' ');
 
+let JIG_IDX = null;
+const jigIndex = name => { if (!JIG_IDX) { JIG_IDX = new Map(); JIG.names.forEach((n, i) => JIG_IDX.set(n, i)); } return JIG_IDX.get(name); };
 // ---- plans: the pieces from above and every chest, for the structure plan window (js/06c-plan.js) ----
 function jigPlanOf(kind, ws, A, conts) {
   // not the one-block pieces (mobs, gold blocks); trees only for camps
-  const pieces = A.pieces.filter(p => p.el.t !== 'e' && (kind === 'camp' || p.el.t !== 'f') && !/\/(mobs|blocks|spawner|villagers|animals|iron_golem|cats|sheep|butcher_animals)\//.test(p.name || '')).map(p => ({ t: p.name || '', b0: [p.box[0], p.box[1], p.box[2]], b1: [p.box[3], p.box[4], p.box[5]] }));
+  const tops = p => (p.el.t === 'L' ? p.el.els : [p.el]).filter(e => e.t === 's').map(e => [jigIndex(e.name), p.rot, p.pos]);   // drawn block by block (js/06h-topview.js)
+  const pieces = A.pieces.filter(p => p.el.t !== 'e' && (kind === 'camp' || p.el.t !== 'f') && !/\/(mobs|blocks|spawner|villagers|animals|iron_golem|cats|sheep|butcher_animals)\//.test(p.name || '')).map(p => ({ t: p.name || '', b0: [p.box[0], p.box[1], p.box[2]], b1: [p.box[3], p.box[4], p.box[5]], top: tops(p) }));
   const chests = conts.filter(c => c.table).map(c => ({ x: c.x, y: kind === 'camp' || kind === 'village' ? null : c.y, z: c.z, table: c.table, seed: c.seed, barrel: c.block === 'barrel',
     pot: c.block === 'decorated_pot', disp: c.block === 'dispenser', pi: c.piece,
     secret: /secret/.test(c.table), unsure: c.unsure, biome: c.biome }));

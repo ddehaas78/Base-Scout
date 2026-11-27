@@ -362,3 +362,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v85 | Modèles pour contribuer : `CONTRIBUTING.md` (comment ouvrir une issue et proposer un changement), modèles d'issue Bug et Idea, modèle de pull request (dossier `.github`) |
 | v86 | Plans des coffres pour les villages (5 types, choisis par biome comme le jeu) et les chambres des épreuves (coffres, tonneaux, pots, distributeurs, coffres de récompense) ; distributeurs à 9 cases et pots à 1 case ; tables de butin village, épreuves, ruines sous-marines et manoir ajoutées |
 | v87 | Icônes colorées comme dans le jeu : armure en cuir, herbes et fougères, potions, flèches à effet |
+| v90 | Plans des structures dessinés bloc par bloc avec les textures du jeu (chambres des épreuves, villages, bastions, cités antiques, camps) : vue de dessus comme un plan, toits et plafonds enlevés, murs plus sombres ; villages et camps posés sur l'herbe, le sable ou la neige |

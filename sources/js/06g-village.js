@@ -30,7 +30,8 @@ LOOT_MORE.village = (ws, x, z, ver, biome, built) => {
   const P = jigPlanOf('village', ws, V.A, V.conts);
   P.pieces.forEach(p => { p.kind = V.kind; });
   P.chests.forEach(c => { c.house = villagePieceName(V.A.pieces[c.pi].name || ''); });
-  return { info: `<span>${{ plains: 'Plains village', desert: 'Desert village', savanna: 'Savanna village', snowy: 'Snowy village', taiga: 'Taiga village' }[V.kind]}</span>`, ...P };
+  const ground = { plains: 'block/grass_block_top|91bd59', desert: 'block/sand', savanna: 'block/grass_block_top|bfb755', snowy: 'block/snow', taiga: 'block/grass_block_top|86b783' }[V.kind];
+  return { ground, info: `<span>${{ plains: 'Plains village', desert: 'Desert village', savanna: 'Savanna village', snowy: 'Snowy village', taiga: 'Taiga village' }[V.kind]}</span>`, ...P };
 };
 
 // trial chambers: deep underground (Y −40 to −20 for the start), every chest, barrel, pot and dispenser with loot

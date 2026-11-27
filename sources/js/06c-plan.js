@@ -75,17 +75,17 @@ function schemHTML(S) {
   x0 -= 4; z0 -= 4; x1 += 4; z1 += 4;
   pv = { x0, z0, W: x1 - x0 + 1, H: z1 - z0 + 1 };
   const order = pieces.map((p, i) => i).sort((a, b) => (pieces[a].b0[1] - pieces[b].b0[1]) || a - b);   // lower pieces first, so towers sit on top
-  const kinds = new Map();
+  const kinds = new Map(), top = typeof hasTop === 'function' && hasTop(S);   // block by block (js/06h-topview.js): the pieces are only outlines over it
   const blocks = order.map(i => {
     const p = pieces[i], [name, tex, dark] = look(p); kinds.set(name, [tex, dark]);
     const big = ['Library', 'End portal room', 'End ship', 'Dirt room (start)', 'Start of the bastion', 'Watchtower'].includes(name);
-    return `<i class="ppc" style="--x:${p.b0[0] - x0};--z:${p.b0[2] - z0};--w:${p.b1[0] - p.b0[0] + 1};--h:${p.b1[2] - p.b0[2] + 1};background-image:${texLayers(tex, dark)}" title="${escH(name)}">${big ? `<b>${escH(name)}</b>` : ''}</i>`;
+    return `<i class="ppc${top ? ' ghost' : ''}" style="--x:${p.b0[0] - x0};--z:${p.b0[2] - z0};--w:${p.b1[0] - p.b0[0] + 1};--h:${p.b1[2] - p.b0[2] + 1}${top ? '' : `;background-image:${texLayers(tex, dark)}`}" title="${escH(name)}">${big && !top ? `<b>${escH(name)}</b>` : ''}</i>`;
   }).join('');
   const chests = S.chests.map((c, j) => `<button type="button" class="pchest${c.cart ? ' cart' : ''}${j === planSel ? ' on' : ''}" data-chest="${j}" style="--x:${c.x - x0 + .5};--z:${c.z - z0 + .5}" title="${escH(chestName(S, j))} ${j + 1}">${j + 1}</button>`).join('');
   const legend = [...kinds].map(([name, [tex, dark]]) => `<span><i style="background-image:${texLayers(tex, dark)}"></i>${escH(name)}</span>`).join('');
-  return `<div class="pview" id="pview"><span class="pnorth">N ↑</span><div class="pworld" id="pworld">${blocks}${chests}</div>
+  return `<div class="pview" id="pview"><span class="pnorth">N ↑</span><div class="pworld" id="pworld" style="--W:${pv.W};--H:${pv.H}">${top ? '<canvas class="ptop" id="ptop"></canvas>' : ''}${blocks}${chests}</div>
     <div class="pzoom"><button type="button" id="pzIn" title="Zoom in">+</button><button type="button" id="pzOut" title="Zoom out">−</button><button type="button" id="pzFit" title="See it all">⤢</button></div></div>
-    <div class="plegend">${legend}</div>`;
+    ${top ? '' : `<div class="plegend">${legend}</div>`}`;
 }
 function pvApply() {
   const w = $('pworld'); if (!w || !pv) return;
@@ -182,7 +182,7 @@ function renderPlan() {
   $('planTitle').innerHTML = `<span>${title}</span> <span class="sub">X ${S.x} · Z ${S.z}</span>`;
   if (S.drawn !== true) {   // the map is built once per plan; picking a chest only moves the highlight
     $('planMap').innerHTML = (S.info ? `<p class="pinfo">${S.info}</p>` : '') + (S.key === 'pyramid' ? planHTML(S) : schemHTML(S)) + `<p class="hint">${note}</p>`;
-    S.drawn = true; if (S.key !== 'pyramid') requestAnimationFrame(pvWire);
+    S.drawn = true; if (S.key !== 'pyramid') { requestAnimationFrame(pvWire); if ($('ptop')) topDraw(S); }
   } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
   if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">${S.note || 'No chest in this one.'}</p>`; return; }
   planSel = Math.min(planSel, S.chests.length - 1);
