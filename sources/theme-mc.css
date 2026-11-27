@@ -369,3 +369,10 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .toast.in { animation: toastin .25s ease-out; }
 @keyframes toastin { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .toast.in { animation: none; } }
+
+/* Picked point: the coordinates as on the map bar; click a pair to copy it */
+#pinbox .pinxz { font: 600 14px ui-monospace, "JetBrains Mono", Menlo, monospace; margin: 2px 0 4px; white-space: nowrap; }
+#pinbox .pinxz .cl { color: #8f978f; }
+#pinbox .pxz { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
+#pinbox .pxz:hover, #pinbox .pxz:focus-visible { background: rgba(255,255,255,.12); outline: none; text-decoration: underline; }
+#pinbox .actions:empty { display: none; }

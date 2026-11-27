@@ -8,6 +8,7 @@ function drawCoordLabels(M, items) {
   ctx.font = `600 ${10.5 * d}px ui-monospace, "JetBrains Mono", Menlo, monospace`; ctx.textAlign = 'center';
   ctx.lineJoin = 'round'; ctx.lineWidth = 3 * d; ctx.strokeStyle = 'rgba(8,10,9,.92)'; ctx.fillStyle = '#f5f7f4';
   for (const it of items) {
+    if (it.key && doneHide && typeof isDone === 'function' && isDone(it.key, it)) continue;   // hidden as done: no numbers either
     const [x, y] = M.scr(it.x, it.z);
     if (x < -40 || y < -40 || x > cv.width + 40 || y > cv.height + 40) continue;
     const half = it.size * d / 2 + 5 * d;
@@ -78,7 +79,7 @@ const findMap = MapView({
       if (fCoords) {
         const items = [];
         const add = (keys, size) => { for (const k of keys) for (const q of (M.structs[k] ? M.structs[k].values() : [])) {
-          const [x, y] = M.scr(q.x, q.z); if (x >= 0 && y >= 0 && x <= cv.width && y <= cv.height) items.push({ x: q.x, z: q.z, size });
+          const [x, y] = M.scr(q.x, q.z); if (x >= 0 && y >= 0 && x <= cv.width && y <= cv.height) items.push({ key: k, x: q.x, z: q.z, size });
         } };
         add(wanted, wantSize); if (!far) add(others, 16);
         if (items.length <= 80) drawCoordLabels(M, items);

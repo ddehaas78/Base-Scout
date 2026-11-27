@@ -745,6 +745,13 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .toast.in { animation: toastin .25s ease-out; }
 @keyframes toastin { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .toast.in { animation: none; } }
+
+/* Picked point: the coordinates as on the map bar; click a pair to copy it */
+#pinbox .pinxz { font: 600 14px ui-monospace, "JetBrains Mono", Menlo, monospace; margin: 2px 0 4px; white-space: nowrap; }
+#pinbox .pinxz .cl { color: #8f978f; }
+#pinbox .pxz { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
+#pinbox .pxz:hover, #pinbox .pxz:focus-visible { background: rgba(255,255,255,.12); outline: none; text-decoration: underline; }
+#pinbox .actions:empty { display: none; }
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} img{max-width:100%}</style>
 </head>
@@ -3213,6 +3220,7 @@ function drawCoordLabels(M, items) {
   ctx.font = `600 ${10.5 * d}px ui-monospace, "JetBrains Mono", Menlo, monospace`; ctx.textAlign = 'center';
   ctx.lineJoin = 'round'; ctx.lineWidth = 3 * d; ctx.strokeStyle = 'rgba(8,10,9,.92)'; ctx.fillStyle = '#f5f7f4';
   for (const it of items) {
+    if (it.key && doneHide && typeof isDone === 'function' && isDone(it.key, it)) continue;   // hidden as done: no numbers either
     const [x, y] = M.scr(it.x, it.z);
     if (x < -40 || y < -40 || x > cv.width + 40 || y > cv.height + 40) continue;
     const half = it.size * d / 2 + 5 * d;
@@ -3283,7 +3291,7 @@ const findMap = MapView({
       if (fCoords) {
         const items = [];
         const add = (keys, size) => { for (const k of keys) for (const q of (M.structs[k] ? M.structs[k].values() : [])) {
-          const [x, y] = M.scr(q.x, q.z); if (x >= 0 && y >= 0 && x <= cv.width && y <= cv.height) items.push({ x: q.x, z: q.z, size });
+          const [x, y] = M.scr(q.x, q.z); if (x >= 0 && y >= 0 && x <= cv.width && y <= cv.height) items.push({ key: k, x: q.x, z: q.z, size });
         } };
         add(wanted, wantSize); if (!far) add(others, 16);
         if (items.length <= 80) drawCoordLabels(M, items);
@@ -3396,7 +3404,7 @@ const xMap = MapView({
     // X above, Z below each icon, once there are few enough on screen to read them
     if (xCoords && onScreen <= 80) {
       const items = [];
-      for (const k of visible) for (const q of (M.structs[k] ? M.structs[k].values() : [])) items.push({ x: q.x, z: q.z, size: size(k) });
+      for (const k of visible) for (const q of (M.structs[k] ? M.structs[k].values() : [])) items.push({ key: k, x: q.x, z: q.z, size: size(k) });
       drawCoordLabels(M, items);
     }
     if (xHover) {   // ring the icon under the pointer
@@ -3457,9 +3465,11 @@ function renderPin() {
   const ow = xDim === -1 ? `${pin.x * 8} ~ ${pin.z * 8}` : here, ne = xDim === 0 ? `${Math.floor(pin.x / 8)} ~ ${Math.floor(pin.z / 8)}` : here;
   const owX = xDim === -1 ? pin.x * 8 : pin.x, owZ = xDim === -1 ? pin.z * 8 : pin.z;
   const biome = xMap.biomeAt(pin.x, pin.z) || ''; pin.biome = biome;
-  const copies = xDim === 0 ? `<button type="button" data-copy="${ow}">Overworld ${ow}</button><button type="button" data-copy="${ne}">Nether ${ne}</button>`
-    : xDim === -1 ? `<button type="button" data-copy="${ne}">Nether ${ne}</button><button type="button" data-copy="${ow}">Overworld ${ow}</button>`
-    : `<button type="button" data-copy="${here}">End ${here}</button>`;
+  // the coordinates, like the bar on the map: click a pair to copy it (white: Overworld, red: Nether)
+  const pair = (txt, col, name) => `<span class="pxz" role="button" tabindex="0" data-copy="${txt}" style="color:${col}" title="Click to copy the ${name} coordinates">${txt.replace(' ~ ', ', ')}</span>`;
+  const copies = xDim === 0 ? pair(ow, OW_COL, 'Overworld') + '<span class="cl"> | </span>' + pair(ne, NE_COL, 'Nether')
+    : xDim === -1 ? pair(ne, NE_COL, 'Nether') + '<span class="cl"> | </span>' + pair(ow, OW_COL, 'Overworld')
+    : pair(here, OW_COL, 'End');
   const g = pin.q && pin.q.n ? pin.q : null;
   const gateNote = !g ? '' : g.key === 'gateway'
     ? `<p class="hint" style="margin:0">Opens after dragon kill ${g.n}${g.n === 1 ? ' (the first one)' : ''}. Throw an ender pearl into it to reach ${g.dx}, ${g.dz}.</p>`
@@ -3492,15 +3502,12 @@ function renderPin() {
     : 'Fossil: buried about 15 to 25 blocks under the surface.') + ' It can be missing where a cave cuts through it.' : '';
   const minorNote = pin.q && (MINOR_NOTES[pin.q.key] || fossilNote) ? `<p class="hint" style="margin:0">${MINOR_NOTES[pin.q.key] || fossilNote}</p>` : '';
   const shipNote = pin.label === 'End ship (elytra)' ? `<p class="hint" style="margin:0">The elytra hangs in an item frame at the back of the ship, next to the dragon head.</p>` : '';
-  box.innerHTML = `<div class="coords">X ${pin.x} · Z ${pin.z} <span class="sub" style="font-family:var(--f-body)">${DIMS[xDim].name}</span></div>
+  box.innerHTML = `<div class="pinxz"><span class="cl">X, Z :</span> ${copies}</div>
     <div class="sub">${[pin.label, biome, fmt(Math.hypot(pin.x, pin.z)) + ' from 0, 0'].filter(Boolean).join(' · ')}</div>
-    ${shipNote}${gateNote}${wildNote}${basNote}${minorNote}<div class="actions">${copies}${jump}
-      ${xDim !== 1 ? `<button type="button" id="pinFind" title="Search for spots starting here, in Spot finder">Find spots here</button>` : ''}
-      ${pin.q && LOOT_KEYS.has(pin.q.key) ? `<button type="button" id="pinPlan" title="Plan from above and what is in each chest (or double-click the structure)">Chests</button>` : ''}
-      ${pin.q && typeof isDone === 'function' ? (isDone(pin.q.key, pin.q) ? `<button type="button" id="pinDone" class="on" title="Click to undo">✓ Done</button>` : `<button type="button" id="pinDone" title="Tick it on the maps (or right-click / double-click the structure)">Mark as done</button>`) : ''}</div>`;
-  box.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
+    ${shipNote}${gateNote}${wildNote}${basNote}${minorNote}<div class="actions">${jump}
+      ${pin.q && LOOT_KEYS.has(pin.q.key) ? `<button type="button" id="pinPlan" title="Plan from above and what is in each chest (or double-click the structure)">Chests</button>` : ''}</div>`;
+  box.querySelectorAll('[data-copy]').forEach(b => { b.onclick = () => copy(b.dataset.copy); b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy(b.dataset.copy); } }; });
   if ($('pinPlan')) $('pinPlan').onclick = () => openPlan(pin.q);
-  if ($('pinDone')) $('pinDone').onclick = () => { setDone(pin.q.key, pin.q, !isDone(pin.q.key, pin.q)); renderPin(); };
   if ($('pinJump')) $('pinJump').onclick = () => {
     const to = g.key === 'gateway' ? { key: 'gatexit', x: g.dx, z: g.dz, n: g.n, sx: g.x, sz: g.z } : { key: 'gateway', x: g.sx, z: g.sz, n: g.n, dx: g.x, dz: g.z };
     xMap.centerOn(to.x, to.z);
