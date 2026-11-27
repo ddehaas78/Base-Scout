@@ -129,14 +129,15 @@ async function d3Open(S) {
     const cut = $('p3dcut'); cut.max = size[1] - 1; cut.value = size[1] - 1;
     $('p3droof').onchange = () => { R.setStructure(build(+cut.value)); d3Draw(); };
     let t = 0; cut.oninput = () => { clearTimeout(t); t = setTimeout(() => { R.setStructure(build(+cut.value)); d3Draw(); }, 120); };   // rebuilt when the slider stops
-    let drag = null;   // only while a button is held: left turns, right (or Shift + left) moves
+    let drag = null;   // only while a button is held: left turns, right zooms (drag up / down), Shift + left moves
     cv.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
     cv.addEventListener('pointermove', e => {
       if (!drag) return;
-      const pan = (e.buttons & 2) || ((e.buttons & 1) && e.shiftKey), turn = (e.buttons & 1) && !e.shiftKey;
-      if (!pan && !turn) { drag = null; return; }   // the button was let go outside the view
+      const zoom = e.buttons & 2, pan = !zoom && (e.buttons & 1) && e.shiftKey, turn = !zoom && (e.buttons & 1) && !e.shiftKey;
+      if (!zoom && !pan && !turn) { drag = null; return; }   // the button was let go outside the view
       const dx = e.clientX - drag[0], dy = e.clientY - drag[1]; drag[0] = e.clientX; drag[1] = e.clientY;
-      if (pan) { const k = me.dist / 400, c = Math.cos(me.yaw), s = Math.sin(me.yaw); me.center[0] -= (dx * c + dy * s) * k; me.center[2] -= (dx * s - dy * c) * k; }
+      if (zoom) me.dist = Math.max(4, Math.min(480, me.dist * Math.exp(dy * 0.01)));   // right button: drag down to go back, up to come closer
+      else if (pan) { const k = me.dist / 400, c = Math.cos(me.yaw), s = Math.sin(me.yaw); me.center[0] -= (dx * c + dy * s) * k; me.center[2] -= (dx * s - dy * c) * k; }
       else { me.yaw += dx * 0.01; me.pitch = Math.max(-1.5, Math.min(1.5, me.pitch + dy * 0.01)); }
       d3Draw();
     });

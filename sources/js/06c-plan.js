@@ -111,9 +111,9 @@ function pvWire() {
   const mid = () => [v.clientWidth / 2, v.clientHeight / 2];
   if ($('pz3d')) $('pz3d').onclick = () => d3Open(planCur);   // js/06i-3d.js
   $('pzIn').onclick = () => pvZoom(1.6, ...mid()); $('pzOut').onclick = () => pvZoom(1 / 1.6, ...mid()); $('pzFit').onclick = () => pvFit();
-  v.addEventListener('wheel', e => { e.preventDefault(); const r = v.getBoundingClientRect(); pvZoom(Math.exp(-e.deltaY * 0.002), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  v.addEventListener('wheel', e => { if (e.target.closest('#p3d')) return; e.preventDefault(); const r = v.getBoundingClientRect(); pvZoom(Math.exp(-e.deltaY * 0.002), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
   let drag = null;
-  v.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; drag = [e.clientX, e.clientY]; v.setPointerCapture(e.pointerId); v.classList.add('grab'); });
+  v.addEventListener('pointerdown', e => { if (e.target.closest('button') || e.target.closest('#p3d')) return; /* the 3D view has its own */ drag = [e.clientX, e.clientY]; v.setPointerCapture(e.pointerId); v.classList.add('grab'); });
   v.addEventListener('pointermove', e => { if (!drag) return; pv.ox += e.clientX - drag[0]; pv.oy += e.clientY - drag[1]; drag = [e.clientX, e.clientY]; pvApply(); });
   const up = () => { drag = null; v.classList.remove('grab'); };
   v.addEventListener('pointerup', up); v.addEventListener('pointercancel', up);
