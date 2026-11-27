@@ -353,3 +353,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v77 | Picked point : petit bouton « Done » à côté de « Chests » (pour toute structure) ; les phrases d'explication sous les structures sont enlevées |
 | v78 | Première visite : le site s'ouvre sur la Seed map (ensuite, il rouvre le dernier onglet utilisé) ; phrase « Switching between Overworld and Nether… » enlevée sous les dimensions |
 | v79 | Seed map : les boutons Overworld / Nether / End sont au-dessus de la carte, dans la même barre que « Dimension » du Spot finder |
+| v80 | Seed map : le panneau de gauche a la même largeur que dans le Spot finder, la carte commence au même endroit (plus de décalage en changeant d'onglet) ; la barre au-dessus des panneaux a une hauteur fixe identique dans les deux onglets |

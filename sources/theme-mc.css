@@ -104,6 +104,7 @@ input:focus-visible, select:focus-visible { border-color: #fff !important; outli
 .frow .fw select { width: auto; max-width: 92px; }
 .frow .fxz label { min-width: 0; }
 @media (min-width: 785px) { .main { grid-template-columns: 412px minmax(0, 1fr) !important; } }   /* room for the crafting-table frame */
+@media (min-width: 785px) { .explore { grid-template-columns: 412px minmax(0, 1fr) !important; } }   /* Seed map: same left panel width as Spot finder, so switching tabs doesn't move things */
 
 /* Librarian: cards as item tooltips, the table as a dark menu list */
 .libcard { border-radius: 0 !important; background: rgba(16,0,16,.94) !important; border: 2px solid transparent !important; border-image: linear-gradient(#5000ff, #28007f) 1 !important; }
@@ -376,3 +377,8 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 #pinbox .pxz { cursor: pointer; padding: 1px 3px; border-radius: 3px; }
 #pinbox .pxz:hover, #pinbox .pxz:focus-visible { background: rgba(255,255,255,.12); outline: none; text-decoration: underline; }
 #pinbox .actions:empty { display: none; }
+
+/* the bar above the panels (Spot finder: Look in / Dimension / Search; Seed map: Dimension) has the same fixed height in both tabs,
+   so the panels below start on the same pixel whatever the browser's fonts do */
+.pane > .controls { height: 52px; box-sizing: border-box; align-items: flex-end; align-content: flex-end; overflow: visible; }
+.pane > .controls .fdim > span { display: block; height: 16px; line-height: 16px; }
