@@ -155,8 +155,10 @@ function renderPin() {
   const shipNote = pin.label === 'End ship (elytra)' ? `<p class="hint" style="margin:0">The elytra hangs in an item frame at the back of the ship, next to the dragon head.</p>` : '';
   box.innerHTML = `<div class="pinxz"><span class="cl">X, Z :</span> ${copies}</div>
     <div class="sub">${[pin.label, biome, fmt(Math.hypot(pin.x, pin.z)) + ' from 0, 0'].filter(Boolean).join(' · ')}</div>
-    ${shipNote}${gateNote}${wildNote}${basNote}${minorNote}<div class="actions">${jump}
-      ${pin.q && LOOT_KEYS.has(pin.q.key) ? `<button type="button" id="pinPlan" title="Plan from above and what is in each chest (or double-click the structure)">Chests</button>` : ''}</div>`;
+    <div class="actions">${jump}
+      ${pin.q && LOOT_KEYS.has(pin.q.key) ? `<button type="button" id="pinPlan" title="Plan from above and what is in each chest (or double-click the structure)">Chests</button>` : ''}
+      ${pin.q && typeof isDone === 'function' ? `<button type="button" id="pinDone"${isDone(pin.q.key, pin.q) ? ' class="on" title="Click to undo">✓ Done' : ' title="Mark this structure as done (or right-click it)">Done'}</button>` : ''}</div>`;
+  if ($('pinDone')) $('pinDone').onclick = () => { setDone(pin.q.key, pin.q, !isDone(pin.q.key, pin.q)); renderPin(); };
   box.querySelectorAll('[data-copy]').forEach(b => { b.onclick = () => copy(b.dataset.copy); b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy(b.dataset.copy); } }; });
   if ($('pinPlan')) $('pinPlan').onclick = () => openPlan(pin.q);
   if ($('pinJump')) $('pinJump').onclick = () => {
