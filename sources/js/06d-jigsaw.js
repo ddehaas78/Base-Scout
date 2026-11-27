@@ -11,6 +11,7 @@ const JIG_CONF = {
   ancient: { pool: 'ancient_city/city_center', size: 7, dist: 116, y: -27, hack: false, anchor: 'city_anchor', minY: -64, maxY: 320 },
   camp: { size: 2, dist: 80, y: 64, hack: true, anchor: null, minY: -64, maxY: 320 },   // y: the ground, only roughly (it moves everything the same)
   village: { size: 6, dist: 80, y: 64, hack: true, anchor: null, minY: -64, maxY: 320 },   // pool: village/<type>/town_centers
+  outpost: { pool: 'pillager_outpost/base_plates', size: 7, dist: 80, y: 64, hack: true, anchor: null, minY: -64, maxY: 320 },
   trial: { pool: 'trial_chambers/chamber/end', size: 20, dist: 116, ySample: [-40, -20], pad: 10, hack: false, anchor: null, minY: -64, maxY: 320 },
 };
 const DIRS = { north: [0, 0, -1], south: [0, 0, 1], west: [-1, 0, 0], east: [1, 0, 0], up: [0, 1, 0], down: [0, -1, 0] };

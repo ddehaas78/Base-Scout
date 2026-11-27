@@ -18,10 +18,10 @@ CAMP_BIOMES = ['bamboo_jungle', 'birch_forest', 'cherry_grove', 'dappled_forest'
   'old_growth_pine_taiga', 'old_growth_spruce_taiga', 'pale_garden', 'savanna', 'snowy_taiga', 'sparse_jungle', 'swamp', 'taiga', 'windswept_forest', 'wooded_badlands']
 VILLAGES = ['desert', 'plains', 'savanna', 'snowy', 'taiga']
 STARTS = {'bastion': 'bastion/starts', 'ancient': 'ancient_city/city_center', **{'camp_' + b: 'abandoned_camp/tent/' + b for b in CAMP_BIOMES},
-          **{'village_' + v: 'village/' + v + '/town_centers' for v in VILLAGES}, 'trial': 'trial_chambers/chamber/end'}
+          **{'village_' + v: 'village/' + v + '/town_centers' for v in VILLAGES}, 'trial': 'trial_chambers/chamber/end', 'outpost': 'pillager_outpost/base_plates'}
 # blocks whose block entity is a RandomizableContainer: placing one takes a random number for its loot seed
 CONTAINERS = {'chest', 'trapped_chest', 'barrel', 'dispenser', 'dropper', 'hopper', 'decorated_pot', 'crafter',
-              'shulker_box'} | {c + '_shulker_box' for c in 'white orange magenta light_blue yellow lime pink gray light_gray cyan purple blue brown green red black'.split()}
+              'shulker_box'} | {w + c + 'copper_chest' for w in ('', 'waxed_') for c in ('', 'exposed_', 'weathered_', 'oxidized_')} | {c + '_shulker_box' for c in 'white orange magenta light_blue yellow lime pink gray light_gray cyan purple blue brown green red black'.split()}
 
 def get(path):
     f = os.path.join(CACHE, path.replace('/', '__'))
@@ -134,7 +134,7 @@ def main():
            'pools': {k: {'fb': v['fb'], 'els': [[short(e), w] for e, w in v['els']]} for k, v in pools.items()}}
     js = os.path.join(HERE, '..', 'js', '06d-jigsawdata.js')
     with open(js, 'w') as f:
-        f.write(f'// bastions, ancient cities, abandoned camps, villages and trial chambers, piece by piece: pools and pieces of Java {DATA[:-5]} (built by i18n/jigsaw.py)\n')
+        f.write(f'// bastions, ancient cities, abandoned camps, villages, trial chambers and pillager outposts, piece by piece: pools and pieces of Java {DATA[:-5]} (built by i18n/jigsaw.py)\n')
         f.write('const JIG = ' + json.dumps(out, separators=(',', ':')) + ';\n')
     nc = sum(len(t['cont']) for t in temps.values())
     print(len(pools), 'pools,', len(temps), 'pieces,', nc, 'containers,', os.path.getsize(js), 'bytes')

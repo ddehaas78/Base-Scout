@@ -47,7 +47,8 @@ const LOOK = {
     : /ramparts|walls|rampart_plates|edges/.test(p.t) ? ['Ramparts and walls', ['block/cracked_polished_blackstone_bricks'], .3]
     : /treasure/.test(p.t) ? ['Treasure room', ['block/gilded_blackstone']] : /hoglin_stable/.test(p.t) ? ['Hoglin stables', ['block/blackstone_top']]
     : /bridge/.test(p.t) ? ['Bridge', ['block/basalt_top']] : ['Housing', ['block/polished_blackstone_bricks']],
-  outpost: () => ['Watchtower', ['block/dark_oak_planks']],
+  outpost: p => /watchtower/.test(p.t) || p.t === 'tower' ? ['Watchtower', ['block/dark_oak_planks']] : /cage/.test(p.t) ? ['Decoration', ['block/iron_bars']]
+    : /tent/.test(p.t) ? ['Tent', ['block/white_wool']] : ['Decoration', ['block/birch_planks']],
   treasure: () => ['Beach sand', ['block/sand']],
   jungle: () => ['Jungle temple', ['block/mossy_cobblestone']],
   igloo: p => p.t ? ['Basement (under the igloo)', ['block/stone_bricks'], .35] : ['Igloo', ['block/snow']],
@@ -79,13 +80,13 @@ function schemHTML(S) {
   const blocks = order.map(i => {
     const p = pieces[i], [name, tex, dark] = look(p); kinds.set(name, [tex, dark]);
     const big = ['Library', 'End portal room', 'End ship', 'Dirt room (start)', 'Start of the bastion', 'Watchtower'].includes(name);
-    return `<i class="ppc${top ? ' ghost' : ''}" style="--x:${p.b0[0] - x0};--z:${p.b0[2] - z0};--w:${p.b1[0] - p.b0[0] + 1};--h:${p.b1[2] - p.b0[2] + 1}${top ? '' : `;background-image:${texLayers(tex, dark)}`}" title="${escH(name)}">${big && !top ? `<b>${escH(name)}</b>` : ''}</i>`;
+    return `<i class="ppc${top ? ' ghost' : ''}" style="--x:${p.b0[0] - x0};--z:${p.b0[2] - z0};--w:${p.b1[0] - p.b0[0] + 1};--h:${p.b1[2] - p.b0[2] + 1}${top ? '' : `;background-image:${texLayers(tex, dark)}`}" title="${escH(name)}">${big && !(p.top && p.top.length) && !p.topx ? `<b>${escH(name)}</b>` : ''}</i>`;
   }).join('');
   const chests = S.chests.map((c, j) => `<button type="button" class="pchest${c.cart ? ' cart' : ''}${j === planSel ? ' on' : ''}" data-chest="${j}" style="--x:${c.x - x0 + .5};--z:${c.z - z0 + .5}" title="${escH(chestName(S, j))} ${j + 1}">${j + 1}</button>`).join('');
   const legend = [...kinds].map(([name, [tex, dark]]) => `<span><i style="background-image:${texLayers(tex, dark)}"></i>${escH(name)}</span>`).join('');
   return `<div class="pview" id="pview"><span class="pnorth">N ↑</span><div class="pworld" id="pworld" style="--W:${pv.W};--H:${pv.H}">${top ? '<canvas class="ptop" id="ptop"></canvas>' : ''}${blocks}${chests}</div>
     <div class="pzoom"><button type="button" id="pzIn" title="Zoom in">+</button><button type="button" id="pzOut" title="Zoom out">−</button><button type="button" id="pzFit" title="See it all">⤢</button></div></div>
-    ${top ? '' : `<div class="plegend">${legend}</div>`}`;
+    ${S.pieces.some(p => (p.top && p.top.length) || p.topx) ? '' : `<div class="plegend">${legend}</div>`}`;
 }
 function pvApply() {
   const w = $('pworld'); if (!w || !pv) return;

@@ -40,7 +40,7 @@ LOOT_MORE.jungle = (ws, x, z, ver) => {
   const spots = [[3, 1, 'chests/jungle_temple_dispenser', 1], [9, 3, 'chests/jungle_temple_dispenser', 1], [8, 3, 'chests/jungle_temple'], [7, 10, 'chests/jungle_temple']];
   const chests = spots.map(([lx, lz, table, disp], i) => { const [cx, cz] = world(lx, lz); return { x: cx, z: cz, table, seed: seeds[i], disp: !!disp }; });
   const b = facing === 'east' || facing === 'west' ? { b0: [minX, 0, minZ], b1: [minX + 14, 0, minZ + 11] } : { b0: [minX, 0, minZ], b1: [minX + 11, 0, minZ + 14] };
-  return { facing, chests, pieces: [{ t: 0, ...b }] };
+  return { ground: 'block/grass_block_top|59c93c', facing, chests, pieces: [{ t: 0, ...b }] };
 };
 
 // ---- igloo: the chest is in the basement, which only some igloos have ----
@@ -49,10 +49,12 @@ LOOT_MORE.igloo = (ws, x, z, ver) => {
   const minX = x & ~15, minZ = z & ~15, r = chunkRand(ws, minX >> 4, minZ >> 4);
   const o = r.nextInt(4), basement = r.nextDouble() < 0.5, size = r.nextInt(8) + 4, rot = o & 1, mirror = o >> 1;
   const top = rot ? { b0: [minX, 0, minZ], b1: [minX + 7, 0, minZ + 6] } : { b0: [minX, 0, minZ], b1: [minX + 6, 0, minZ + 7] };
-  if (!basement) return { chests: [], pieces: [{ t: 0, ...top }], note: 'This igloo has no basement, so no chest.' };
+  const topx = ['igloo/top', o, 0, minX, minZ, 3, 5];   // drawn block by block (js/06h-topview.js): [piece, turn, mirror, x, z, pivot x, pivot z]
+  if (!basement) return { ground: 'block/snow', chests: [], pieces: [{ t: 0, ...top, topx }], note: 'This igloo has no basement, so no chest.' };
   const [dx, dz] = [[1, 4], [5, 6], [4, 3], [2, 7]][(rot << 1) | mirror];
   const xr = chunkXoro(ws, minX, minZ, salt); xr.nextLongJ();
-  return { chests: [{ x: minX + dx, z: minZ + dz, table: 'chests/igloo_chest', seed: xr.nextLongJ() }], pieces: [{ t: 1, b0: [minX - 1, 0, minZ - 2], b1: [minX + 8, 0, minZ + 7] }, { t: 0, ...top }], depth: 3 + size * 3 };
+  return { ground: 'block/snow', chests: [{ x: minX + dx, z: minZ + dz, table: 'chests/igloo_chest', seed: xr.nextLongJ() }],
+    pieces: [{ t: 0, ...top, topx }, { t: 1, b0: [minX - 1, 1, minZ - 2], b1: [minX + 8, 1, minZ + 7], topx: ['igloo/bottom', o, 0, minX, minZ - 2, 3, 7] }], depth: 3 + size * 3 };   // the basement drawn over the igloo
 };
 
 // ---- shipwreck: 20 kinds of wreck (11 on beaches), each with its own chests ----
@@ -73,7 +75,8 @@ LOOT_MORE.shipwreck = (ws, x, z, ver, biome) => {
   const chests = list.map(([t, a, b]) => { const [dx, dz] = turn(a, b); return { x: px + dx, z: pz + dz, table: 'chests/shipwreck_' + t }; });
   markerSeeds(ws, chests, salt, beached ? xr => xr.nextIntJ(3) : null);   // a beached wreck first sinks 0 to 2 blocks into the sand
   const [ex, ez] = turn(sx, sz), box = { b0: [Math.min(px, px + ex), 0, Math.min(pz, pz + ez)], b1: [Math.max(px, px + ex) - 1, 0, Math.max(pz, pz + ez) - 1] };
-  return { chests, pieces: [{ t: kind >= 10 ? 1 : 0, ...box }], beached, kindName: name };
+  const topx = ['shipwreck/' + name + (kind >= 10 ? '_degraded' : ''), rot, 0, minX, minZ, 4, 15];
+  return { ground: beached ? 'block/sand' : 'block/sand|9fb4d6', chests, pieces: [{ t: kind >= 10 ? 1 : 0, ...box, topx }], beached, kindName: name };
 };
 
 // ---- ruined portal: the chest is near the portal; only its chunk is known for sure ----
@@ -100,7 +103,8 @@ function portalPlan(ws, x, z, ver, type) {
   const ccx = (minX + ox + Math.trunc(wx / 2)) & ~15, ccz = (minZ + oz + Math.trunc(wz / 2)) & ~15;   // the chunk of the portal's middle
   const box = { b0: [minX + Math.min(ox, ox + wx), 0, minZ + Math.min(oz, oz + wz)], b1: [minX + Math.max(ox, ox + wx) - 1, 0, minZ + Math.max(oz, oz + wz) - 1] };
   const cxm = (box.b0[0] + box.b1[0]) >> 1, czm = (box.b0[2] + box.b1[2]) >> 1;
-  return { chests: [{ x: cxm, z: czm, table: 'chests/ruined_portal', seed: chunkXoro(ws, ccx, ccz, salt).nextLongJ(), near: true }], pieces: [{ t: giant ? 1 : 0, ...box }], giant };
+  const topx = [(giant ? 'ruined_portal/giant_portal_' : 'ruined_portal/portal_') + start, rot, mirror ? 1 : 0, minX, minZ, hx, hz];
+  return { chests: [{ x: cxm, z: czm, table: 'chests/ruined_portal', seed: chunkXoro(ws, ccx, ccz, salt).nextLongJ(), near: true }], pieces: [{ t: giant ? 1 : 0, ...box, topx }], giant };
 }
 LOOT_MORE.portal = (ws, x, z, ver, biome) => portalPlan(ws, x, z, ver, PORTAL_TYPE(biome));
 LOOT_MORE.nportal = (ws, x, z, ver) => portalPlan(ws, x, z, ver, 'portal_nether');

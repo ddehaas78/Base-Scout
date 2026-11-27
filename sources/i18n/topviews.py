@@ -20,7 +20,7 @@ else: sys.argv = sys.argv[:1]
 import jigsaw   # its cache folder and its .nbt reader
 TEX = set(open('/tmp/texlist.txt').read().split()) if os.path.exists('/tmp/texlist.txt') else None   # textures the mirror has
 bare = lambda s: s.split(':')[-1]
-EMPTY = {'air', 'cave_air', 'void_air', 'structure_void', 'jigsaw', 'light', 'barrier'}
+EMPTY = {'air', 'cave_air', 'void_air', 'structure_void', 'jigsaw', 'light', 'barrier', 'structure_block'}
 
 # colours the game paints over grey textures (grass, leaves, water...)
 GRASS, FOLIAGE, WATER = '7cbd6b', '59ae30', '3f76e4'
@@ -35,7 +35,7 @@ SPECIAL = {'water': 'block/water_still', 'lava': 'block/lava_still', 'chest': 'b
 NEWER = {'bush': 'block/short_grass', 'wildflowers': 'block/pink_petals', 'tall_dry_grass': 'block/dead_bush', 'short_dry_grass': 'block/dead_bush',
          'leaf_litter': 'block/pink_petals', 'firefly_bush': 'block/short_grass', 'cactus_flower': 'block/cactus_top', 'iron_chain': 'block/chain',
          'poplar_log': 'block/birch_log', 'poplar_fence': 'block/birch_planks', 'poplar_*': 'block/birch_planks', 'red_poplar_leaves': 'block/acacia_leaves',
-         '*copper_lantern': 'block/lantern', '*_wall_sign': 'block/oak_planks'}
+         '*copper_lantern': 'block/lantern', '*_wall_sign': 'block/oak_planks', 'purpur_pillar': 'block/purpur_pillar_top'}
 def model(path):
     out = {'textures': {}, 'elements': None}
     while path:
@@ -95,6 +95,13 @@ def top_texture(bid, props):
     CACHE[key] = tex
     return tex
 
+SW = ['with_mast', 'upsidedown_full', 'upsidedown_fronthalf', 'upsidedown_backhalf', 'sideways_full', 'sideways_fronthalf', 'sideways_backhalf',
+      'rightsideup_full', 'rightsideup_fronthalf', 'rightsideup_backhalf']
+EXTRA = ['igloo/top', 'igloo/middle', 'igloo/bottom'] + ['shipwreck/' + n for n in SW] + ['shipwreck/' + n + '_degraded' for n in SW] \
+    + ['ruined_portal/portal_%d' % i for i in range(1, 11)] + ['ruined_portal/giant_portal_%d' % i for i in range(1, 4)] \
+    + ['end_city/' + n for n in ['base_floor', 'base_roof', 'bridge_end', 'bridge_gentle_stairs', 'bridge_piece', 'bridge_steep_stairs', 'fat_tower_base',
+       'fat_tower_middle', 'fat_tower_top', 'second_floor_1', 'second_floor_2', 'second_roof', 'ship', 'third_floor_1', 'third_floor_2', 'third_roof',
+       'tower_base', 'tower_floor', 'tower_piece', 'tower_top']]
 UNDER = ('trial_chambers', 'ancient_city', 'bastion')   # underground: their ceilings are skipped anyway, nothing more to do
 def top_view(T):
     sx, sy, sz = T['size']
@@ -127,7 +134,15 @@ def main():
         k = name + ('|' + TINT[bid] if bid in TINT else '')
         if k not in tidx: tidx[k] = len(texs) + 1; texs.append(k)
         return tidx[k]
-    offs = []
+    offs, extra = [], {}
+    for n in EXTRA:   # pieces of structures that are not put together by jigsaws (js/06b2-structs2.js, js/06b-structs.js)
+        T = jigsaw.nbt(jigsaw.get('structure/' + n + '.nbt')); cells = top_view(T)
+        extra[n] = [len(out), T['size'][0], T['size'][2]]
+        for c in cells:
+            if c is None: out += b'\0\0'; continue
+            (bid, props), wall = c
+            v = tex_id(bid, props) * 2 + (1 if wall else 0)
+            out += bytes([v & 255, v >> 8])
     for n in JIG['names']:
         try: T = jigsaw.nbt(jigsaw.get('structure/' + n + '.nbt'))
         except Exception: offs.append(-1); continue
@@ -147,6 +162,7 @@ def main():
         f.write('// (2 bytes a cell, row by row along X: texture number × 2, +1 for a wall; 0 = nothing); TOP_GZ: the data, gzipped then base64\n')
         f.write('const TOP_TEX = ' + json.dumps(texs, separators=(',', ':')) + ';\n')
         f.write('const TOP_AT = ' + json.dumps(offs, separators=(',', ':')) + ';\n')
+        f.write('const TOP_EXTRA = ' + json.dumps(extra, separators=(',', ':')) + ';   // other pieces: name → [where, size x, size z]\n')
         f.write('const TOP_GZ = "' + z + '";\n')
     print(len(texs), 'textures,', len(out), 'bytes raw,', os.path.getsize(path), 'bytes in the file')
     print('no texture:', sorted(missing.items(), key=lambda x: -x[1])[:40])

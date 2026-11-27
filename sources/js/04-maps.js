@@ -201,6 +201,18 @@ function iglooBasement(q) {   // the igloo's own random numbers: turn, then base
 }
 // abandoned camps with a secret chest: a small chest on the icon. Each camp is put together like the game does it
 // (js/06d-jigsaw.js), with the exact biome at its tent asked from the engine, a batch at a time.
+// the secret chest's badge: a small copper chest, drawn pixel by pixel (16 × 16)
+const COPPER_CHEST = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 16; const g = c.getContext('2d');
+  const box = (col, x, y, w, h) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  box('#3a1d12', 1, 2, 14, 13);                                     // outline
+  box('#e48a62', 2, 3, 12, 4); box('#f0a27c', 2, 3, 12, 1);        // lid, its lit edge
+  box('#7a3b24', 2, 7, 12, 1);                                     // the gap under the lid
+  box('#c0653f', 2, 8, 12, 6); box('#a5532f', 2, 13, 12, 1);       // body, its shaded bottom
+  box('#5fb39a', 3, 4, 2, 1); box('#5fb39a', 11, 10, 2, 1); box('#5fb39a', 4, 12, 1, 1);   // a little verdigris
+  box('#3a1d12', 7, 6, 2, 4); box('#e8e8e8', 7, 7, 2, 2);          // the latch
+  return c;
+})();
 const SECRET = new Map(); let secretQ = [], secretT = 0;
 function campSecret(M, q) {
   const seed = parseSeed($('seed').value); if (seed === null || typeof campBuild === 'undefined' || !verAtLeast(VER, '26.3')) return false;
@@ -247,7 +259,7 @@ function drawIcons(M, keys, sizeFor, tile) {
       if (ic) ctx.drawImage(ic.canvas, x - sz/2, y - sz/2, sz, sz);
       if (s.key === 'igloo' && APPLE.naturalWidth && iglooBasement(q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(APPLE, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
       if (done) doneMark(ctx, x, y, sz, d);
-      if (s.key === 'camp' && ICONS.bas_treasure && campSecret(M, q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(ICONS.bas_treasure.canvas, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
+      if (s.key === 'camp' && campSecret(M, q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(COPPER_CHEST, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
     }
   }
 }

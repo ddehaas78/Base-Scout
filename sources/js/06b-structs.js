@@ -281,6 +281,8 @@ function mineshaftChests(ws, list, salt) {
 // ---- end city ----
 const EC = [[9, 3, 9], [11, 1, 11], [4, 5, 1], [4, 6, 7], [4, 5, 3], [4, 6, 3], [12, 3, 12], [12, 7, 12], [16, 5, 16], [11, 7, 11], [11, 7, 11], [13, 1, 13], [12, 23, 28], [13, 7, 13], [13, 7, 13], [15, 1, 15], [6, 6, 6], [6, 3, 6], [6, 3, 6], [8, 4, 8]];
 const [EC_BASE_FLOOR, EC_BASE_ROOF, EC_BRIDGE_END, EC_GENTLE, EC_BRIDGE, EC_STEEP, EC_FAT_BASE, EC_FAT_MID, EC_FAT_TOP, EC_SECOND_1, EC_SECOND_2, EC_SECOND_ROOF, EC_SHIP, EC_THIRD_1, EC_THIRD_2, EC_THIRD_ROOF, EC_TOWER_BASE, , EC_TOWER_PIECE, EC_TOWER_TOP] = EC.keys();
+const EC_NAMES = ['base_floor', 'base_roof', 'bridge_end', 'bridge_gentle_stairs', 'bridge_piece', 'bridge_steep_stairs', 'fat_tower_base', 'fat_tower_middle', 'fat_tower_top',
+  'second_floor_1', 'second_floor_2', 'second_roof', 'ship', 'third_floor_1', 'third_floor_2', 'third_roof', 'tower_base', 'tower_floor', 'tower_piece', 'tower_top'];   // the pieces' files
 function endCityPieces(ws, cx, cz) {
   const r = chunkRand(ws, cx, cz), all = [];
   let ship = false;
@@ -416,12 +418,14 @@ function lootStructure(key, ws, x, z, ver, biome, built) {   // built: a camp al
   const salt = lootSalt(saltKey, ver); if (!salt) return null;
   if (key === 'treasure') {
     const r = chunkXoro(ws, minX, minZ, salt), c = { x: minX + 9, z: minZ + 9, table: 'chests/buried_treasure', seed: r.nextLongJ() };
-    return plan({ x: c.x, z: c.z, chests: [c], pieces: [{ t: 'chest', b0: [c.x, 0, c.z], b1: [c.x, 0, c.z] }] });
+    return plan({ ground: 'block/sand', x: c.x, z: c.z, chests: [c], pieces: [{ t: 'chest', b0: [c.x, 0, c.z], b1: [c.x, 0, c.z] }] });
   }
   if (key === 'outpost') {
     const rot = chunkRand(ws, cx, cz).nextInt(4), [dx, dz] = [[10, 10], [-10, 10], [-10, -10], [10, -10]][rot];
     const c = { x: minX + dx, z: minZ + dz, table: 'chests/pillager_outpost' }; c.seed = chunkXoro(ws, c.x, c.z, salt).nextLongJ();
-    return plan({ facing: ['north', 'east', 'south', 'west'][rot], chests: [c], pieces: [{ t: 'tower', b0: [minX + (dx < 0 ? -14 : 0), 0, minZ + (dz < 0 ? -14 : 0)], b1: [minX + (dx < 0 ? 0 : 14), 0, minZ + (dz < 0 ? 0 : 14)] }] });
+    const A = jigAssemble(ws, cx, cz, JIG_CONF.outpost, JIG_CONF.outpost.pool);   // the whole outpost (tents, cages, logs), to draw it
+    const pieces = A ? jigPlanOf('outpost', ws, A, []).pieces : [{ t: 'tower', b0: [minX + (dx < 0 ? -14 : 0), 0, minZ + (dz < 0 ? -14 : 0)], b1: [minX + (dx < 0 ? 0 : 14), 0, minZ + (dz < 0 ? 0 : 14)] }];
+    return plan({ ground: 'block/grass_block_top|91bd59', facing: ['north', 'east', 'south', 'west'][rot], chests: [c], pieces });
   }
   if (saltKey === 'bastion' || key === 'ancient') {   // whole structure, piece by piece: js/06d-jigsaw.js
     const conf = JIG_CONF[saltKey === 'bastion' ? 'bastion' : 'ancient'], A = jigAssemble(ws, cx, cz, conf, conf.pool);
@@ -429,6 +433,7 @@ function lootStructure(key, ws, x, z, ver, biome, built) {   // built: a camp al
   }
   if (saltKey === 'endcity') {
     const pieces = endCityPieces(ws, cx, cz);
+    pieces.forEach(p => { p.topx = ['end_city/' + EC_NAMES[p.t], p.rot, 0, p.pos[0] - 1, p.pos[2] - 1, 0, 0]; });   // drawn block by block (js/06h-topview.js)
     return plan({ pieces, chests: endCityChests(ws, pieces, salt) });
   }
   if (key === 'stronghold') {
