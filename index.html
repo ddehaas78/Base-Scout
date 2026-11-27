@@ -5561,8 +5561,8 @@ async function d3Open(S) {
     const cut = $('p3dcut'); cut.max = size[1] - 1; cut.value = size[1] - 1;
     $('p3droof').onchange = () => { R.setStructure(build(+cut.value)); d3Draw(); };
     let t = 0; cut.oninput = () => { clearTimeout(t); t = setTimeout(() => { R.setStructure(build(+cut.value)); d3Draw(); }, 120); };   // rebuilt when the slider stops
-    // camera: it looks at "center" from "dist" away. Left button: turn around what it looks at; right button: look around
-    // from where it stands; wheel: walk forward or back (no stop)
+    // camera: it looks at "center" from "dist" away. Left button: look around from where it stands; right button: turn around
+    // the structure's middle; wheel: walk forward or back (no stop)
     const axes = () => { const M = m4mul(m4rx(me.pitch), m4ry(me.yaw)); return { fwd: [-M[2], -M[6], -M[10]], right: [M[0], M[4], M[8]], up: [M[1], M[5], M[9]] }; };
     const add = (a, v, k) => { a[0] += v[0] * k; a[1] += v[1] * k; a[2] += v[2] * k; };
     let drag = null;
@@ -5574,7 +5574,7 @@ async function d3Open(S) {
     });
     cv.addEventListener('pointermove', e => {
       if (!drag) return;
-      const look = e.buttons & 2, turn = !look && (e.buttons & 1);
+      const look = e.buttons & 1, turn = !look && (e.buttons & 2);   // left: look around in place; right: turn around the middle
       if (!look && !turn) { drag = null; return; }   // the button was let go outside the view
       const dx = e.clientX - drag[0], dy = e.clientY - drag[1]; drag[0] = e.clientX; drag[1] = e.clientY;
       if (look) {   // the eye stays put, the point it looks at moves around it
@@ -5582,7 +5582,7 @@ async function d3Open(S) {
         me.yaw += dx * 0.006; me.pitch = Math.max(-1.5, Math.min(1.5, me.pitch + dy * 0.006));
         me.center = eye; add(me.center, axes().fwd, me.dist);
       } else {
-        if (!drag[2]) {   // left, first move: turn around the structure's middle, from where the eye is now 
+        if (!drag[2]) {   // right, first move: turn around the structure's middle, from where the eye is now 
           drag[2] = true; const eye = me.center.slice(); add(eye, axes().fwd, -me.dist);
           const d = [mid[0] - eye[0], mid[1] - eye[1], mid[2] - eye[2]], n = Math.hypot(...d) || 1;
           me.dist = n; me.center = mid.slice(); me.pitch = Math.asin(Math.max(-1, Math.min(1, -d[1] / n))); me.yaw = Math.atan2(d[0], -d[2]);
@@ -5598,7 +5598,7 @@ async function d3Open(S) {
       const hit = [...$('p3dmarks').querySelectorAll('[data-chest3]')].find(b => { if (b.hidden) return false; const r = b.getBoundingClientRect(); return e.clientX >= r.left - 2 && e.clientX <= r.right + 2 && e.clientY >= r.top - 2 && e.clientY <= r.bottom + 2; });
       if (hit) { planSel = +hit.dataset.chest3; renderPlan(); d3Draw(); }   // its contents, on the right
     });
-    cv.addEventListener('pointerup', stop); cv.addEventListener('pointercancel', stop); cv.addEventListener('lostpointercapture', stop);
+    cv.addEventListener('pointerup', stop); cv.addEventListener('pointercancel', stop);   // (not lostpointercapture: it can come after the next press)
     cv.addEventListener('contextmenu', e => e.preventDefault());
     const step = Math.max(1, Math.max(size[0], size[2]) * 0.015);
     cv.addEventListener('wheel', e => { e.preventDefault(); add(me.center, axes().fwd, -Math.sign(e.deltaY) * step); d3Draw(); }, { passive: false });
