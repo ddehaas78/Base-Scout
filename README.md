@@ -361,3 +361,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v84 | Seed map : « Show on map » a deux onglets, Structures et Biomes ; un clic sur un biome l'entoure en jaune partout sur la carte (plusieurs à la fois possible, choix gardé) |
 | v85 | Modèles pour contribuer : `CONTRIBUTING.md` (comment ouvrir une issue et proposer un changement), modèles d'issue Bug et Idea, modèle de pull request (dossier `.github`) |
 | v86 | Plans des coffres pour les villages (5 types, choisis par biome comme le jeu) et les chambres des épreuves (coffres, tonneaux, pots, distributeurs, coffres de récompense) ; distributeurs à 9 cases et pots à 1 case ; tables de butin village, épreuves, ruines sous-marines et manoir ajoutées |
+| v87 | Icônes colorées comme dans le jeu : armure en cuir, herbes et fougères, potions, flèches à effet |

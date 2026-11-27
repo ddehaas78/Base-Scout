@@ -152,9 +152,36 @@ def render3d(parts):
                 px[x, y] = (int(c[0] * light[0]), int(c[1] * light[1]), int(c[2] * light[2]), 255)
     return img.resize((OUT, OUT), Image.LANCZOS)
 
-def flat(M):
+def item_tints(d):   # the colours the game paints over each layer (leather, grass, potions...), as in the item's own file
+    t = bare(d.get('type', ''))
+    if t == 'model': return d.get('tints') or []
+    for k in ('fallback', 'on_false'):
+        if k in d: return item_tints(d[k])
+    if d.get('cases'): return item_tints(d['cases'][0]['model'])
+    if d.get('entries'): return item_tints(d['entries'][0]['model'])
+    if t == 'composite' and d.get('models'): return item_tints(d['models'][0])
+    return []
+
+GRASS = 0x7CBD6B   # grass and ferns as in a plains-like biome (the game takes the biome's colour)
+def tint_rgb(t):
+    k = bare(t.get('type', ''))
+    if k == 'grass': return GRASS
+    if k == 'foliage': return 0x59AE30
+    v = t.get('value', t.get('default'))
+    return None if v is None else v & 0xFFFFFF
+
+def tinted(im, rgb):
+    r, g, b = rgb >> 16 & 255, rgb >> 8 & 255, rgb & 255
+    px = im.load(); out = im.copy(); po = out.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            c = px[x, y]; po[x, y] = (c[0] * r // 255, c[1] * g // 255, c[2] * b // 255, c[3])
+    return out
+
+def flat(M, tints=()):
     layers = [M['textures'][k] for k in sorted(M['textures']) if re.fullmatch(r'layer\d+', k)]
     ims = [tex(l) for l in layers]
+    ims = [tinted(im, tint_rgb(tints[i])) if im is not None and i < len(tints) and tint_rgb(tints[i]) is not None else im for i, im in enumerate(ims)]
     if not ims or ims[0] is None: return None
     base = Image.new('RGBA', ims[0].size)
     for im in ims:
@@ -168,9 +195,13 @@ def main():
     for key, name, cur in items:
         d = get(BASE + 'items/' + key + '.json')
         if not d: continue
-        parts = [(model(m), tr) for m, tr in item_models(json.loads(d)['model'])]
+        D = json.loads(d)['model']
+        parts = [(model(m), tr) for m, tr in item_models(D)]
         if not parts: continue
-        if any(p[0]['elements'] for p in parts):
+        tints = item_tints(D)
+        if tints and not any(p[0]['elements'] for p in parts):   # painted layers: the mirror only has them grey or white
+            im = flat(parts[0][0], tints); why = 'tinted'
+        elif any(p[0]['elements'] for p in parts):
             im = render3d([p for p in parts if p[0]['elements']]); why = '3D'
         else:
             layer0 = bare(parts[0][0]['textures'].get('layer0', ''))
