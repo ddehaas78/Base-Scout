@@ -204,7 +204,7 @@ function jigPlanOf(kind, ws, A, conts) {
   const tops = p => (p.el.t === 'L' ? p.el.els : [p.el]).filter(e => e.t === 's').map(e => [jigIndex(e.name), p.rot, p.pos]);   // drawn block by block (js/06h-topview.js)
   const pieces = A.pieces.filter(p => p.el.t !== 'e' && (kind === 'camp' || p.el.t !== 'f') && !/\/(mobs|blocks|spawner|villagers|animals|iron_golem|cats|sheep|butcher_animals)\//.test(p.name || '')).map(p => ({ t: p.name || '', b0: [p.box[0], p.box[1], p.box[2]], b1: [p.box[3], p.box[4], p.box[5]], top: tops(p) }));
   const chests = conts.filter(c => c.table).map(c => ({ x: c.x, y: kind === 'camp' || kind === 'village' ? null : c.y, z: c.z, table: c.table, seed: c.seed, barrel: c.block === 'barrel',
-    pot: c.block === 'decorated_pot', disp: c.block === 'dispenser', pi: c.piece,
+    pot: c.block === 'decorated_pot', disp: c.block === 'dispenser', pi: c.piece, y3: c.y,
     secret: /secret/.test(c.table), unsure: c.unsure, biome: c.biome }));
   return { pieces, chests };
 }

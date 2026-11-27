@@ -49,7 +49,7 @@ function saveState() {
     localStorage.setItem(STATE_KEY, JSON.stringify({
       findDim, placedStore, fixedStore, radii: RADII, start: $('start').value, cx: $('cx').value, cz: $('cz').value,
       xview: xMap.cv.width > 4 && !xRestore ? { x: mx, z: mz, s: xMap.view.s } : xRestore,
-      pin: pin ? { x: pin.x, z: pin.z, label: pin.label, q: pin.q || null } : null,
+      pin: pin ? { x: pin.x, z: pin.z, label: pin.label, q: pin.q || null } : null, goMark,
       res: (() => {   // the "This seed" search, even while Find seeds is shown
         const j = findMode === 'seed' ? job : modeState.seed.job, s = findMode === 'seed' ? sel : modeState.seed.sel;
         return j ? { job: j, exact, close, tilesDone, reach, startPos, spawn, sel: s ? [s.x, s.z] : null } : null;
@@ -81,6 +81,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveS
   $('start').onchange();
   if (st.xview && isFinite(st.xview.s) && st.xview.s > 0) xRestore = st.xview;
   if (st.pin && isFinite(st.pin.x)) { pin = st.pin; renderPin(); }
+  if (st.goMark && isFinite(st.goMark.x)) goMark = st.goMark;
   $('libBooks').checked = !!st.libBooks; $('libOnlyWant').checked = !!st.libOnlyWant;
   restoredRes = st.res || null;
   if (st.sf) {

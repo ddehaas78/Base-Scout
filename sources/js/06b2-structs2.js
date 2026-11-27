@@ -54,7 +54,9 @@ LOOT_MORE.igloo = (ws, x, z, ver) => {
   const [dx, dz] = [[1, 4], [5, 6], [4, 3], [2, 7]][(rot << 1) | mirror];
   const xr = chunkXoro(ws, minX, minZ, salt); xr.nextLongJ();
   return { ground: 'block/snow', chests: [{ x: minX + dx, z: minZ + dz, table: 'chests/igloo_chest', seed: xr.nextLongJ() }],
-    pieces: [{ t: 0, ...top, topx }, { t: 1, b0: [minX - 1, 1, minZ - 2], b1: [minX + 8, 1, minZ + 7], topx: ['igloo/bottom', o, 0, minX, minZ - 2, 3, 7] }], depth: 3 + size * 3 };   // the basement drawn over the igloo
+    pieces: [{ t: 0, ...top, topx }, { t: 1, b0: [minX - 1, 1, minZ - 2], b1: [minX + 8, 1, minZ + 7], topx: ['igloo/bottom', o, 0, minX, minZ - 2, 3, 7, -3 - size * 3] },   // the basement drawn over the igloo
+      ...Array.from({ length: size - 1 }, (_, j) => ({ t: 1, only3d: true, b0: [minX, 0, minZ], b1: [minX, 0, minZ], topx: ['igloo/middle', o, 0, minX + 2, minZ + 4, 1, 1, -3 - 3 * j] }))],   // the ladder down (3D only)
+    depth: 3 + size * 3 };
 };
 
 // ---- shipwreck: 20 kinds of wreck (11 on beaches), each with its own chests ----

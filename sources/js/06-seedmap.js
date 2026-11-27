@@ -1,5 +1,6 @@
 // ---------- seed map tab ----------
 let xSpawn = null, pin = null, xFirst = true;
+let goMark = null;   // the spot typed in Go to: a red dot of its own, kept when another point is picked
 let xDim = 0, xHover = null, xCoords = true;
 try { xCoords = localStorage.getItem('basescout.xz') !== '0'; } catch {}
 // remember what is hidden, so structures added later start switched on
@@ -84,6 +85,11 @@ const xMap = MapView({
       ctx.beginPath(); ctx.arc(x, y, 9 * d, 0, Math.PI * 2); ctx.fillStyle = 'rgba(10,14,12,.8)'; ctx.fill();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * d; ctx.beginPath();
       ctx.moveTo(x - 5 * d, y); ctx.lineTo(x + 5 * d, y); ctx.moveTo(x, y - 5 * d); ctx.lineTo(x, y + 5 * d); ctx.stroke();
+    }
+    if (goMark) {   // red dot, white ring: easy to find again from far away
+      const [x, y] = M.scr(goMark.x, goMark.z);
+      ctx.beginPath(); ctx.arc(x, y, 9 * d, 0, Math.PI * 2); ctx.fillStyle = '#e8262b'; ctx.fill(); ctx.lineWidth = 2.5 * d; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 11.5 * d, 0, Math.PI * 2); ctx.lineWidth = 2 * d; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.stroke();
     }
     if (pin) { const [x, y] = M.scr(pin.x, pin.z); diamond(ctx, x, y, 7, css('--accent')); }
   },
@@ -204,6 +210,7 @@ $('gotoForm').onsubmit = e => {
   let x = +$('gx').value || 0, z = +$('gz').value || 0;
   if ($('gNether').checked && xDim === 0) { x *= 8; z *= 8; }        // typed Nether coords, showing the Overworld
   if ($('gNether').checked && xDim === -1) { x = Math.floor(x / 8); z = Math.floor(z / 8); }   // typed Overworld coords, showing the Nether
+  goMark = { x: Math.round(x), z: Math.round(z) };
   goTo(x, z);
 };
 $('goOrigin').onclick = () => goTo(0, 0);
@@ -232,8 +239,8 @@ function setDim(d, quiet) {
   const [cx, cz] = xMap.center(), prev = xDim;
   const f = prev === 0 && d === -1 ? 1 / 8 : prev === -1 && d === 0 ? 8 : null;   // Overworld ↔ Nether keep the same spot
   xDim = d;
-  if (f) { xMap.centerOn(Math.round(cx * f), Math.round(cz * f)); if (pin) pin = { x: Math.floor(pin.x * f), z: Math.floor(pin.z * f), label: 'Same spot in the ' + DIMS[d].name }; }
-  else { xMap.fitTo(0, 0, d === 1 ? 1500 : 2500); pin = null; }
+  if (f) { xMap.centerOn(Math.round(cx * f), Math.round(cz * f)); if (pin) pin = { x: Math.floor(pin.x * f), z: Math.floor(pin.z * f), label: 'Same spot in the ' + DIMS[d].name }; if (goMark) goMark = { x: Math.floor(goMark.x * f), z: Math.floor(goMark.z * f) }; }
+  else { xMap.fitTo(0, 0, d === 1 ? 1500 : 2500); pin = null; goMark = null; }
   try { localStorage.setItem('basescout.dim', String(d)); } catch {}
   xMap.reset(); renderDimUI(); renderToggles(); renderPin(); if (typeof renderShowTab === 'function') renderShowTab();
   setText($('xhov'), '');   // the next draw puts the placeholder back

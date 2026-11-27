@@ -433,7 +433,7 @@ function lootStructure(key, ws, x, z, ver, biome, built) {   // built: a camp al
   }
   if (saltKey === 'endcity') {
     const pieces = endCityPieces(ws, cx, cz);
-    pieces.forEach(p => { p.topx = ['end_city/' + EC_NAMES[p.t], p.rot, 0, p.pos[0] - 1, p.pos[2] - 1, 0, 0]; });   // drawn block by block (js/06h-topview.js)
+    pieces.forEach(p => { p.topx = ['end_city/' + EC_NAMES[p.t], p.rot, 0, p.pos[0] - 1, p.pos[2] - 1, 0, 0, p.pos[1]]; });   // drawn block by block (js/06h-topview.js)
     return plan({ pieces, chests: endCityChests(ws, pieces, salt) });
   }
   if (key === 'stronghold') {

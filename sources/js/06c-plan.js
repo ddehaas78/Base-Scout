@@ -70,7 +70,7 @@ const planKind = key => key.startsWith('bas_') ? 'bastion' : key === 'endship' ?
 const texLayers = (tex, dark) => (dark ? [`linear-gradient(rgba(0,0,0,${dark}),rgba(0,0,0,${dark}))`] : []).concat(tex.map(t => `url('${texUrl(t)}'),url('${texUrl(t, 1)}')`)).join(',');
 let pv = null;   // the plan view: { x0, z0, W, H, k, ox, oy }
 function schemHTML(S) {
-  const look = LOOK[planKind(S.key)], pieces = S.key === 'treasure' ? [{ t: 0, b0: [S.x - 4, 0, S.z - 4], b1: [S.x + 4, 0, S.z + 4] }] : S.pieces;
+  const look = LOOK[planKind(S.key)], pieces = S.key === 'treasure' ? [{ t: 0, b0: [S.x - 4, 0, S.z - 4], b1: [S.x + 4, 0, S.z + 4] }] : S.pieces.filter(p => !p.only3d);
   let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
   for (const p of pieces.concat(S.chests.map(c => ({ b0: [c.x, 0, c.z], b1: [c.x, 0, c.z] })))) { x0 = Math.min(x0, p.b0[0]); z0 = Math.min(z0, p.b0[2]); x1 = Math.max(x1, p.b1[0]); z1 = Math.max(z1, p.b1[2]); }
   x0 -= 4; z0 -= 4; x1 += 4; z1 += 4;
@@ -85,7 +85,7 @@ function schemHTML(S) {
   const chests = S.chests.map((c, j) => `<button type="button" class="pchest${c.cart ? ' cart' : ''}${j === planSel ? ' on' : ''}" data-chest="${j}" style="--x:${c.x - x0 + .5};--z:${c.z - z0 + .5}" title="${escH(chestName(S, j))} ${j + 1}">${j + 1}</button>`).join('');
   const legend = [...kinds].map(([name, [tex, dark]]) => `<span><i style="background-image:${texLayers(tex, dark)}"></i>${escH(name)}</span>`).join('');
   return `<div class="pview" id="pview"><span class="pnorth">N ↑</span><div class="pworld" id="pworld" style="--W:${pv.W};--H:${pv.H}">${top ? '<canvas class="ptop" id="ptop"></canvas>' : ''}${blocks}${chests}</div>
-    <div class="pzoom"><button type="button" id="pzIn" title="Zoom in">+</button><button type="button" id="pzOut" title="Zoom out">−</button><button type="button" id="pzFit" title="See it all">⤢</button></div></div>
+    <div class="pzoom"><button type="button" id="pzIn" title="Zoom in">+</button><button type="button" id="pzOut" title="Zoom out">−</button><button type="button" id="pzFit" title="See it all">⤢</button>${typeof has3d === 'function' && has3d(S) ? '<button type="button" id="pz3d" title="3D view">3D</button>' : ''}</div></div>
     ${S.pieces.some(p => (p.top && p.top.length) || p.topx) ? '' : `<div class="plegend">${legend}</div>`}`;
 }
 function pvApply() {
@@ -109,6 +109,7 @@ function pvWire() {
   const v = $('pview'); if (!v) return;
   pvFit(); pv.k0 = pv.k * 0.8;
   const mid = () => [v.clientWidth / 2, v.clientHeight / 2];
+  if ($('pz3d')) $('pz3d').onclick = () => d3Open(planCur);   // js/06i-3d.js
   $('pzIn').onclick = () => pvZoom(1.6, ...mid()); $('pzOut').onclick = () => pvZoom(1 / 1.6, ...mid()); $('pzFit').onclick = () => pvFit();
   v.addEventListener('wheel', e => { e.preventDefault(); const r = v.getBoundingClientRect(); pvZoom(Math.exp(-e.deltaY * 0.002), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
   let drag = null;
@@ -190,7 +191,7 @@ function renderPlan() {
   const tabs0 = document.querySelector('#planChests .ptabs'), keep = tabs0 ? tabs0.scrollTop : 0;   // the tab list keeps its scroll when a tab is picked
   $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}"><span>${chestName(S, k)}</span> ${k + 1}</button>`).join('')}</div>${chestHTML(S, planSel)}
     <p class="hint">Contents are fixed by the seed when the structure is built. Already opened chests, or chests changed by another player, won't match.</p>`;
-  document.querySelectorAll('#planDlg [data-chest]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest; renderPlan(); });
+  document.querySelectorAll('#planDlg [data-chest]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest; renderPlan(); if (typeof d3Draw === 'function') d3Draw(); });
   const tabs1 = document.querySelector('#planChests .ptabs');
   if (tabs1) {
     tabs1.scrollTop = keep;
@@ -215,12 +216,12 @@ function openPlan(q, M = xMap) {
   return true;
 }
 function showPlan(p) {
-  planCur = p; planSel = 0;
+  planCur = p; planSel = 0; if (typeof d3Close === 'function') d3Close();
   if (!planCur) { toast('No plan for this structure in this version.', 'bad'); return true; }
   $('planDlg').hidden = false; renderPlan(); renderDoneBtn(); $('planClose').focus();
   return true;
 }
-const closePlan = () => { $('planDlg').hidden = true; planCur = null; };
+const closePlan = () => { $('planDlg').hidden = true; planCur = null; if (typeof d3Close === 'function') d3Close(); };
 addEventListener('resize', () => { if (!$('planDlg').hidden && $('pview')) pvFit(); });   // the view follows the window's size
 $('planClose').onclick = closePlan;
 $('planDlg').addEventListener('click', e => { if (e.target === $('planDlg')) closePlan(); });

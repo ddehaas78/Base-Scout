@@ -49,7 +49,7 @@ async function topDraw(S) {
   const data = await topData(), V = pv;
   let s = 16; while (s > 2 && (V.W * s > 8192 || V.H * s > 8192 || V.W * V.H * s * s > 24e6)) s /= 2;   // pixels per block: as sharp as the browser allows
   const look = LOOK[planKind(S.key)], rooms = ['stronghold', 'fortress', 'jungle'].includes(planKind(S.key));
-  const list = S.pieces.map((p, n) => ({ p, n, y: p.b0[1], cells: topPiece(p) })).sort((a, b) => (a.y - b.y) || (a.n - b.n));   // lower pieces first
+  const list = S.pieces.filter(p => !p.only3d).map((p, n) => ({ p, n, y: p.b0[1], cells: topPiece(p) })).sort((a, b) => (a.y - b.y) || (a.n - b.n));   // lower pieces first
   const keys = new Set(S.ground ? [S.ground] : []);
   for (const e of list) {
     if (!e.cells.length) { if (look) for (const t of look(e.p)[1]) keys.add(t); continue; }

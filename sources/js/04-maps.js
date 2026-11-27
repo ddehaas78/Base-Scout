@@ -201,18 +201,11 @@ function iglooBasement(q) {   // the igloo's own random numbers: turn, then base
 }
 // abandoned camps with a secret chest: a small chest on the icon. Each camp is put together like the game does it
 // (js/06d-jigsaw.js), with the exact biome at its tent asked from the engine, a batch at a time.
-// the secret chest's badge: a small copper chest, drawn pixel by pixel (16 × 16)
-const COPPER_CHEST = (() => {
-  const c = document.createElement('canvas'); c.width = c.height = 16; const g = c.getContext('2d');
-  const box = (col, x, y, w, h) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  box('#3a1d12', 1, 2, 14, 13);                                     // outline
-  box('#e48a62', 2, 3, 12, 4); box('#f0a27c', 2, 3, 12, 1);        // lid, its lit edge
-  box('#7a3b24', 2, 7, 12, 1);                                     // the gap under the lid
-  box('#c0653f', 2, 8, 12, 6); box('#a5532f', 2, 13, 12, 1);       // body, its shaded bottom
-  box('#5fb39a', 3, 4, 2, 1); box('#5fb39a', 11, 10, 2, 1); box('#5fb39a', 4, 12, 1, 1);   // a little verdigris
-  box('#3a1d12', 7, 6, 2, 4); box('#e8e8e8', 7, 7, 2, 2);          // the latch
-  return c;
-})();
+// the secret chest's badge: the game's oxidized copper chest (front cut out of entity/chest/copper_oxidized, 26.3; the
+// texture mirror is older, so it is kept here)
+const COPPER_CHEST = new Image();
+COPPER_CHEST.onload = () => { if (typeof xMap !== 'undefined') xMap.draw(); if (typeof findMap !== 'undefined') findMap.draw(); };
+COPPER_CHEST.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB7ElEQVR42qWTv27TUByFv9quXFm2q9RN3TRKmoGWqB0RQihiozwCzLwAT8LEyMLMK1C2KkMFUgGJSGmXJpHT5s91SBxFCYlTBsc3mKowcKfr35XPPT7nM/znWgF4VX530xEBAKPJHABDV+Tzn/u0YwHwpvRyRYuVvLMqAFPhs+ps0ANsJxOdiavEPHAyWHkbAA2gIwKmwqfw9HHCxfOfaYrFIq+9csK2d1ZNCgT1AavOhnxZG10zCUxqgxG5XI6gPkC3hkwCE9U1mQpfXqIB9L59BeBS+Dx88QxYp9bs86PepNFoYOVt0k4WgE/vP6CMZ3SPI1fKv1Ludrt/PdcANo9KdI/LOPuHfPn4WQZWyWeoujeE9UCGvPXkEe2TU3Ye7MLbhUC8VNfEJoN6sIehK7K2UTx3TQxdQRnPyN67v3Rg6ArzNU1+13wtoYsynkWz8+W+1uwvBdKOhbdoAWC7YNG5jMAKvTZqdovUgomBuAKvncwgptB2IpuT1pB0AWbGNqGTQZx/ZwCkDvZIuXv0gN2d9WULMZpW3sbQlUgkMNFG16iuibN/yFT49CoXt1qQNf4Ox10iAL3KBVPhS9caQK3ZRxnPaJ+cSiLj/yDKIkL9Tg4MXWHzqETYGqK6JmFrKFm38rZ0FraGt2a/AL0p32oSJ5LDAAAAAElFTkSuQmCC';
 const SECRET = new Map(); let secretQ = [], secretT = 0;
 function campSecret(M, q) {
   const seed = parseSeed($('seed').value); if (seed === null || typeof campBuild === 'undefined' || !verAtLeast(VER, '26.3')) return false;
@@ -259,7 +252,7 @@ function drawIcons(M, keys, sizeFor, tile) {
       if (ic) ctx.drawImage(ic.canvas, x - sz/2, y - sz/2, sz, sz);
       if (s.key === 'igloo' && APPLE.naturalWidth && iglooBasement(q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(APPLE, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
       if (done) doneMark(ctx, x, y, sz, d);
-      if (s.key === 'camp' && campSecret(M, q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(COPPER_CHEST, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
+      if (s.key === 'camp' && COPPER_CHEST.naturalWidth && campSecret(M, q)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(COPPER_CHEST, x - sz * 0.05, y - sz * 0.05, sz * 0.6, sz * 0.6); }
     }
   }
 }

@@ -310,6 +310,15 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 /* plans drawn block by block (js/06h-topview.js): the canvas under, each piece a thin outline over it */
 .ptop { position: absolute; left: 0; top: 0; width: calc(var(--W) * var(--k) * 1px); height: calc(var(--H) * var(--k) * 1px); image-rendering: pixelated; opacity: 0; transition: opacity .2s; }
 .ptop.on { opacity: 1; }
+/* the 3D view (js/06i-3d.js): over the plan, same size */
+.p3d { position: absolute; inset: 0; z-index: 4; background: #0b0d10; }
+.p3d canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+.p3dmsg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font: 13px var(--mc); color: #ddd; text-align: center; padding: 20px; }
+.p3dbar { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; gap: 10px; align-items: center; justify-content: space-between; font: 12px var(--mc); color: #eee; text-shadow: 1px 1px 0 #000; }
+.p3dbar label { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.p3dbar input[type=range] { width: 140px; }
+.p3dbar #p3dback { margin-left: auto; white-space: nowrap; }
+#pz3d { font-size: 11px !important; }
 .ppc.ghost { background: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
 .ppc.ghost:hover { box-shadow: inset 0 0 0 1px rgba(255,255,85,.7); }
 .pview .pchest { position: absolute; left: calc(var(--x) * var(--k) * 1px); top: calc(var(--z) * var(--k) * 1px); transform: translate(-50%, -50%); width: 17px; height: 15px; font: 9px/15px var(--mc) !important; }
