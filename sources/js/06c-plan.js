@@ -174,7 +174,7 @@ function slotHTML(s, c) {
 function chestHTML(S, k) {
   const c = S.chests[k];
   if (!c.items) return `<p class="hint"><span>Chest contents are worked out from Java</span> ${LOOT_FROM}. <span>Pick a newer version at the top to see them.</span></p>`;
-  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}${c.house ? ` <span class="mchouse">· ${escH(c.house)}</span>` : ''}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div>${c.unsure ? '<p class="hint">A tree grows in this chunk before this chest is filled: its contents can differ.</p>' : ''}<div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>`;
+  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}${c.house ? ` <span class="mchouse">· ${escH(c.house)}</span>` : ''}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div><div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>`;
 }
 function renderPlan() {
   const S = planCur; if (!S) return;

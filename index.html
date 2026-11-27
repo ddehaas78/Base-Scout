@@ -695,7 +695,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .ptabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; max-height: 182px; overflow-y: auto; }
 /* a chest like the game's: light grey window, 9 x 3 slots */
 .mcchest { background: #c6c6c6; padding: 8px 8px 10px; width: max-content; max-width: 100%; box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 #555, 0 0 0 2px #000; }
-.mct { font-family: var(--mc); color: #404040; font-size: 13px; margin: 0 0 6px 2px; display: flex; gap: 6px; align-items: baseline; }
+.mct { font-family: var(--mc); color: #404040; font-size: 13px; margin: 0 0 6px 2px; display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; width: calc(var(--slot, 36px) * 9 - 2px); }
 .mct .mcxz { margin-left: auto; color: #606060; font-size: 11px; }
 /* slot size shrinks on narrow screens so the 9 columns always fit */
 .planbox { --slot: clamp(24px, calc((100vw / var(--ui) - 90px) / 9), 36px); }
@@ -4770,7 +4770,7 @@ function slotHTML(s, c) {
 function chestHTML(S, k) {
   const c = S.chests[k];
   if (!c.items) return `<p class="hint"><span>Chest contents are worked out from Java</span> ${LOOT_FROM}. <span>Pick a newer version at the top to see them.</span></p>`;
-  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}${c.house ? ` <span class="mchouse">· ${escH(c.house)}</span>` : ''}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div>${c.unsure ? '<p class="hint">A tree grows in this chunk before this chest is filled: its contents can differ.</p>' : ''}<div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>`;
+  return `<div class="mcchest"><div class="mct"><span>${chestName(S, k)}</span> ${k + 1}${c.house ? ` <span class="mchouse">· ${escH(c.house)}</span>` : ''}<span class="mcxz">X ${c.x}${c.y != null ? ' · Y ' + c.y : ''} · Z ${c.z}</span></div><div class="slots">${c.items.slots.map(s => slotHTML(s, c)).join('')}</div></div>`;
 }
 function renderPlan() {
   const S = planCur; if (!S) return;
