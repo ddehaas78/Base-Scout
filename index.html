@@ -2096,12 +2096,32 @@ async function loadItemTextures(onDone) {
       if (badge) {   // little coloured square, bottom right, to tell variants apart
         x.fillStyle = '#111'; x.fillRect(10, 10, 6, 6); x.fillStyle = badge; x.fillRect(11, 11, 4, 4);
       }
-      ICONS[key] = { canvas: c, url: c.toDataURL() };
+      ICONS[key] = { canvas: c, url: c.toDataURL(), real: true };
       changed++;
     } catch (e) { /* offline or blocked: keep the drawn icon */ }
   }));
+  if (changed) {   // keep them for next time, so a reload shows the real textures at once
+    const keep = {};
+    for (const k of Object.keys(TEX_FOR)) if (ICONS[k] && ICONS[k].url && ICONS[k].real) keep[k] = ICONS[k].url;
+    try { localStorage.setItem(ICON_CACHE, JSON.stringify({ src: TEX_SOURCES[0], icons: keep })); } catch {}
+  }
   if (changed && onDone) onDone();
 }
+
+// ---- the real textures saved by the last visit (localStorage): shown straight away, before the download above finishes ----
+const ICON_CACHE = 'basescout.icons.v1';
+(() => {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(ICON_CACHE) || 'null'); } catch {}
+  if (!saved || saved.src !== TEX_SOURCES[0] || !saved.icons) return;
+  for (const [key, url] of Object.entries(saved.icons)) {
+    if (!ICONS[key] || typeof url !== 'string' || !url.startsWith('data:image/png')) continue;
+    const c = ICONS[key].canvas, im = new Image();
+    ICONS[key].url = url; ICONS[key].real = true;   // pictures in the page use the saved one now
+    im.onload = () => { const x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height); x.imageSmoothingEnabled = false; x.drawImage(im, 0, 0, c.width, c.height); };   // the map icon: redrawn in place
+    im.src = url;
+  }
+})();
 
 </script>
 <script>

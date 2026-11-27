@@ -355,3 +355,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v79 | Seed map : les boutons Overworld / Nether / End sont au-dessus de la carte, dans la même barre que « Dimension » du Spot finder |
 | v80 | Seed map : le panneau de gauche a la même largeur que dans le Spot finder, la carte commence au même endroit (plus de décalage en changeant d'onglet) ; la barre au-dessus des panneaux a une hauteur fixe identique dans les deux onglets |
 | v81 | Bouton « ✓ Done » de la même hauteur que « Done » (et que « Chests ») |
+| v82 | Icônes des structures : les vraies textures sont gardées dans le navigateur, donc au rechargement elles s'affichent tout de suite (plus de flash des icônes dessinées) |
