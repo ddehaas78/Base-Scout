@@ -424,6 +424,8 @@ function lootStructure(key, ws, x, z, ver, biome, built) {   // built: a camp al
     const rot = chunkRand(ws, cx, cz).nextInt(4), [dx, dz] = [[10, 10], [-10, 10], [-10, -10], [10, -10]][rot];
     const c = { x: minX + dx, z: minZ + dz, table: 'chests/pillager_outpost' }; c.seed = chunkXoro(ws, c.x, c.z, salt).nextLongJ();
     const A = jigAssemble(ws, cx, cz, JIG_CONF.outpost, JIG_CONF.outpost.pool);   // the whole outpost (tents, cages, logs), to draw it
+    const tower = A && jigContainers(ws, A, salt).find(k => k.table === 'chests/pillager_outpost');   // the chest's exact place, in the assembled watchtower
+    if (tower) { c.x = tower.x; c.z = tower.z; c.y3 = tower.y; c.seed = chunkXoro(ws, c.x, c.z, salt).nextLongJ(); }
     const pieces = A ? jigPlanOf('outpost', ws, A, []).pieces : [{ t: 'tower', b0: [minX + (dx < 0 ? -14 : 0), 0, minZ + (dz < 0 ? -14 : 0)], b1: [minX + (dx < 0 ? 0 : 14), 0, minZ + (dz < 0 ? 0 : 14)] }];
     return plan({ ground: 'block/grass_block_top|91bd59', facing: ['north', 'east', 'south', 'west'][rot], chests: [c], pieces });
   }

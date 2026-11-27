@@ -5,7 +5,7 @@
 const D3_LIB = ['https://cdn.jsdelivr.net/npm/deepslate@0.27.3/dist/deepslate.umd.cjs', 'https://unpkg.com/deepslate@0.27.3/dist/deepslate.umd.cjs'];
 const MCMETA = 'https://raw.githubusercontent.com/misode/mcmeta/';
 const D3_SKIP = new Set(['minecraft:air', 'minecraft:structure_void', 'minecraft:jigsaw', 'minecraft:structure_block', 'minecraft:cave_air']);
-const D3_LIMITS = '3D view: villages, camps and outposts stand on flat ground (the real hills are not known here). Big structures, like ancient cities, can be slow on a weak computer. The first time, about 4 MB of game files are downloaded.';
+const D3_LIMITS = "3D view: villages, camps and outposts stand on flat ground (the real hills are not known here). Strongholds, mineshafts, fortresses and jungle temples are built by the game's code, not from files: they show as simple rooms. Big structures, like ancient cities, can be slow on a weak computer. The first time, about 4 MB of game files are downloaded.";
 
 function d3Script(urls) {
   return new Promise((ok, bad) => {
@@ -80,6 +80,19 @@ async function d3Blocks(S) {
     }
   }
   await Promise.all(jobs);
+  // pieces the game builds in code (strongholds, mineshafts, fortresses, jungle temples): a room, its walls in the plan's block
+  const look = LOOK[planKind(S.key)], boxes = S.pieces.filter(p => !(p.top && p.top.length) && !p.topx && !p.only3d);
+  const bid = t => 'minecraft:' + t.replace(/^block\//, '').replace(/_(top|side|still|0)$/, '');
+  for (const p of boxes) {
+    const tex = look ? look(p)[1] : ['block/stone_bricks'], wall = bid(tex[tex.length - 1]);
+    const [x0, y0, z0] = p.b0, [x1, , z1] = p.b1, y1 = Math.max(p.b1[1], y0 + 4);
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) for (let y = y0; y <= y1; y++)
+      if (y === y0 || y === y1 || x === x0 || x === x1 || z === z0 || z === z1) out.push([x, y, z, wall, {}]);
+  }
+  for (const c of S.chests) if (c.y3 == null && boxes.length) {   // their chests: on the floor of the room they are in
+    const p = boxes.find(p => c.x >= p.b0[0] && c.x <= p.b1[0] && c.z >= p.b0[2] && c.z <= p.b1[2]);
+    if (p) out.push([c.x, p.b0[1] + 1, c.z, c.cart ? 'minecraft:chest' : 'minecraft:chest', {}]);
+  }
   return out;
 }
 // column-major 4 × 4 matrices, like the renderer's
@@ -101,13 +114,13 @@ function d3NoCeilings(blocks) {
   return blocks.filter((b, i) => !off.has(i));
 }
 let D3 = null;   // the open 3D view
-const has3d = S => S.pieces.some(p => (p.top && p.top.length) || p.topx);
+const has3d = S => S.key !== 'pyramid' && S.key !== 'treasure' && S.pieces.length > 0;
 async function d3Open(S) {
   if (!confirm(tr(D3_LIMITS))) return;
   const v = $('pview'); if (!v) return;
   d3Close();
   const box = document.createElement('div'); box.className = 'p3d'; box.id = 'p3d';
-  box.innerHTML = `<canvas id="p3dc"></canvas><p class="p3dmsg" id="p3dmsg">${escH(tr('Loading the 3D view…'))}</p>
+  box.innerHTML = `<canvas id="p3dc"></canvas><div class="p3dmarks" id="p3dmarks"></div><div class="p3dcross"></div><p class="p3dhint" id="p3dhint"></p><p class="p3dmsg" id="p3dmsg">${escH(tr('Loading the 3D view…'))}</p>
     <div class="p3dbar"><label class="check" for="p3droof"><input type="checkbox" id="p3droof" checked> <span>${escH(tr('No ceilings'))}</span></label><label>${escH(tr('Cut above'))} <input type="range" id="p3dcut" min="0" max="1" value="1"></label><button type="button" id="p3dback">${escH(tr('Top view'))}</button></div>`;
   v.append(box);
   $('p3dback').onclick = d3Close;
@@ -124,27 +137,85 @@ async function d3Open(S) {
     const cv = $('p3dc'), gl = cv.getContext('webgl');
     if (!gl) throw new Error('webgl');
     const R = new window.deepslate.StructureRenderer(gl, build(size[1]), res, { chunkSize: 16, useInvisibleBlockBuffer: false });
+    // where each chest is, in the view's own blocks (the plan does not always know its height: then the container block found there)
+    const at = new Map(); for (const b of blocks) if (/chest|barrel|shulker|decorated_pot|dispenser/.test(b[3])) at.set(b[0] + ',' + b[2], b[1]);
+    me.chestPos = S.chests.map(c => { const y = c.y3 != null ? c.y3 : at.get(c.x + ',' + c.z); return y == null ? null : [c.x - lo[0] + .5, y - lo[1] + .5, c.z - lo[2] + .5]; });
+    $('p3dmarks').innerHTML = S.chests.map((c, j) => `<button type="button" class="pchest${c.cart ? ' cart' : ''}" data-chest3="${j}" title="${escH(chestName(S, j))} ${j + 1}">${j + 1}</button>`).join('');
+    $('p3dmarks').querySelectorAll('[data-chest3]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest3; renderPlan(); d3Draw(); });   // its contents, on the right
     Object.assign(me, { R, cv, lo, size, yaw: 0.7, pitch: 0.6, dist: Math.max(size[0], size[2]) * 0.85 + 10, center: [size[0] / 2, size[1] / 2, size[2] / 2] });
     $('p3dmsg').remove();
     const cut = $('p3dcut'); cut.max = size[1] - 1; cut.value = size[1] - 1;
     $('p3droof').onchange = () => { R.setStructure(build(+cut.value)); d3Draw(); };
     let t = 0; cut.oninput = () => { clearTimeout(t); t = setTimeout(() => { R.setStructure(build(+cut.value)); d3Draw(); }, 120); };   // rebuilt when the slider stops
-    let drag = null;   // only while a button is held: left turns, right zooms (drag up / down), Shift + left moves
-    cv.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
+    // camera: it looks at "center" from "dist" away. Left button: turn around what it looks at; right button: look around
+    // from where it stands; wheel: walk forward or back (no stop); Shift + left: slide
+    const axes = () => { const M = m4mul(m4rx(me.pitch), m4ry(me.yaw)); return { fwd: [-M[2], -M[6], -M[10]], right: [M[0], M[4], M[8]], up: [M[1], M[5], M[9]] }; };
+    const add = (a, v, k) => { a[0] += v[0] * k; a[1] += v[1] * k; a[2] += v[2] * k; };
+    let drag = null;
+    const mid = [size[0] / 2, size[1] / 2, size[2] / 2];
+    // a click (no drag) locks the mouse in the view, like the game: the mouse looks around, the wheel and W A S D move,
+    // Space / Shift go up / down, a click picks the chest under the crosshair; Escape gives the mouse back
+    let down = null;
+    const hint = () => { const h = $('p3dhint'); if (h) h.textContent = tr(me.locked ? 'Mouse: look · W A S D, wheel: move · Space / Shift: up / down · Click: the chest in the crosshair · Escape: free the mouse' : 'Click in the view to look around like in the game'); };
+    hint();
+    me.onLock = () => {
+      me.locked = document.pointerLockElement === cv; $('p3d') && $('p3d').classList.toggle('locked', me.locked); hint();
+      if (!me.locked) { me.keys = {}; D3_UNLOCKED = Date.now(); }
+    };
+    document.addEventListener('pointerlockchange', me.onLock);
+    me.onMouse = e => {
+      if (!me.locked) return;
+      me.yaw += e.movementX * 0.0025; me.pitch = Math.max(-1.55, Math.min(1.55, me.pitch + e.movementY * 0.0025));
+      const eye = me.center.slice(); add(eye, axes().fwd, -me.dist); me.center = eye; add(me.center, axes().fwd, me.dist);   // look from where the eye is
+      d3Draw();
+    };
+    document.addEventListener('mousemove', me.onMouse);
+    me.keys = {};
+    me.onKey = e => {
+      if (!me.locked) return;
+      const k = e.code; if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyZ', 'KeyQ'].includes(k)) return;
+      e.preventDefault(); me.keys[k] = e.type === 'keydown'; if (e.type === 'keydown') d3Walk();
+    };
+    document.addEventListener('keydown', me.onKey); document.addEventListener('keyup', me.onKey);
+    me.walk = () => {   // W A S D (Z Q S D too), Space, Shift: one step per frame while held
+      const K = me.keys, { fwd, right } = axes(), sp = Math.max(0.4, step / 5), flat = Math.hypot(fwd[0], fwd[2]) || 1, f = [fwd[0] / flat, 0, fwd[2] / flat];
+      let moved = false;
+      if (K.KeyW || K.KeyZ) { add(me.center, f, sp); moved = true; } if (K.KeyS) { add(me.center, f, -sp); moved = true; }
+      if (K.KeyD) { add(me.center, right, sp); moved = true; } if (K.KeyA || K.KeyQ) { add(me.center, right, -sp); moved = true; }
+      if (K.Space) { me.center[1] += sp; moved = true; } if (K.ShiftLeft || K.ShiftRight) { me.center[1] -= sp; moved = true; }
+      return moved;
+    };
+    cv.addEventListener('pointerdown', e => {
+      if (me.locked) { if (e.button === 0) d3PickCenter(); return; }
+      down = [e.clientX, e.clientY, e.button];
+      drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId);
+    });
     cv.addEventListener('pointermove', e => {
-      if (!drag) return;
-      const zoom = e.buttons & 2, pan = !zoom && (e.buttons & 1) && e.shiftKey, turn = !zoom && (e.buttons & 1) && !e.shiftKey;
-      if (!zoom && !pan && !turn) { drag = null; return; }   // the button was let go outside the view
+      if (!drag || me.locked) return;
+      const look = e.buttons & 2, pan = !look && (e.buttons & 1) && e.shiftKey, turn = !look && (e.buttons & 1) && !e.shiftKey;
+      if (!look && !pan && !turn) { drag = null; return; }   // the button was let go outside the view
       const dx = e.clientX - drag[0], dy = e.clientY - drag[1]; drag[0] = e.clientX; drag[1] = e.clientY;
-      if (zoom) me.dist = Math.max(4, Math.min(480, me.dist * Math.exp(dy * 0.01)));   // right button: drag down to go back, up to come closer
-      else if (pan) { const k = me.dist / 400, c = Math.cos(me.yaw), s = Math.sin(me.yaw); me.center[0] -= (dx * c + dy * s) * k; me.center[2] -= (dx * s - dy * c) * k; }
-      else { me.yaw += dx * 0.01; me.pitch = Math.max(-1.5, Math.min(1.5, me.pitch + dy * 0.01)); }
+      if (pan) { const { right, up } = axes(), k = me.dist / 500; add(me.center, right, -dx * k); add(me.center, up, dy * k); }
+      else if (look) {   // the eye stays put, the point it looks at moves around it
+        const eye = me.center.slice(); add(eye, axes().fwd, -me.dist);
+        me.yaw += dx * 0.006; me.pitch = Math.max(-1.5, Math.min(1.5, me.pitch + dy * 0.006));
+        me.center = eye; add(me.center, axes().fwd, me.dist);
+      } else {
+        if (!drag[2]) {   // left, first move: turn around the structure's middle, from where the eye is now (a plain click locks instead)
+          drag[2] = true; const eye = me.center.slice(); add(eye, axes().fwd, -me.dist);
+          const d = [mid[0] - eye[0], mid[1] - eye[1], mid[2] - eye[2]], n = Math.hypot(...d) || 1;
+          me.dist = n; me.center = mid.slice(); me.pitch = Math.asin(Math.max(-1, Math.min(1, -d[1] / n))); me.yaw = Math.atan2(d[0], -d[2]);
+        }
+        me.yaw += dx * 0.01; me.pitch = Math.max(-1.5, Math.min(1.5, me.pitch + dy * 0.01));
+      }
       d3Draw();
     });
     const stop = () => { drag = null; };
+    cv.addEventListener('pointerup', e => { if (down && down[2] === 0 && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4 && cv.requestPointerLock) cv.requestPointerLock(); down = null; });
     cv.addEventListener('pointerup', stop); cv.addEventListener('pointercancel', stop); cv.addEventListener('lostpointercapture', stop);
     cv.addEventListener('contextmenu', e => e.preventDefault());
-    cv.addEventListener('wheel', e => { e.preventDefault(); me.dist = Math.max(4, Math.min(480, me.dist * Math.exp(e.deltaY * 0.001))); d3Draw(); }, { passive: false });
+    const step = Math.max(2, Math.max(size[0], size[2]) * 0.04);
+    cv.addEventListener('wheel', e => { e.preventDefault(); add(me.center, axes().fwd, -Math.sign(e.deltaY) * step); d3Draw(); }, { passive: false });
     me.ro = new ResizeObserver(() => d3Draw()); me.ro.observe(cv);
     d3Draw();
   } catch (e) {
@@ -162,11 +233,30 @@ function d3Draw() {
     R.setViewport(0, 0, w, h);
     const view = m4mul(m4mul(m4mul(m4t(0, 0, -me.dist), m4rx(me.pitch)), m4ry(me.yaw)), m4t(-me.center[0], -me.center[1], -me.center[2]));
     R.drawStructure(view);
-    const c = planCur && planCur.chests[planSel];   // the chest picked in the list: outlined
-    if (c && c.y3 != null) R.drawOutline(view, [c.x - me.lo[0], c.y3 - me.lo[1], c.z - me.lo[2]]);
+    const p = me.chestPos && me.chestPos[planSel];   // the chest picked: outlined
+    if (p) R.drawOutline(view, [p[0] - .5, p[1] - .5, p[2] - .5]);
+    // every chest's number, seen through the blocks (x-ray), where the camera puts it
+    const f = 1 / Math.tan(35 * Math.PI / 180), asp = w / h;
+    $('p3dmarks').querySelectorAll('[data-chest3]').forEach(b => {
+      const j = +b.dataset.chest3, q = me.chestPos[j]; b.classList.toggle('on', j === planSel);
+      if (!q) { b.hidden = true; return; }
+      const vx = view[0] * q[0] + view[4] * q[1] + view[8] * q[2] + view[12], vy = view[1] * q[0] + view[5] * q[1] + view[9] * q[2] + view[13], vz = view[2] * q[0] + view[6] * q[1] + view[10] * q[2] + view[14];
+      if (vz > -0.2) { b.hidden = true; return; }   // behind the camera
+      b.hidden = false; b.style.left = ((f / asp * vx / -vz + 1) / 2 * w) + 'px'; b.style.top = ((1 - f * vy / -vz) / 2 * h) + 'px';
+    });
   });
 }
+let D3_UNLOCKED = 0;   // when Escape last freed the mouse (that Escape must not close the plan too)
+function d3Walk() { const me = D3; if (!me || me.walking) return; me.walking = true; const go = () => { if (D3 !== me || !me.walk()) { me.walking = false; return; } d3Draw(); requestAnimationFrame(go); }; requestAnimationFrame(go); }
+function d3PickCenter() {   // the chest whose number is nearest the crosshair
+  const me = D3; if (!me || !me.cv) return;
+  const w = me.cv.clientWidth / 2, h = me.cv.clientHeight / 2, r = me.cv.getBoundingClientRect();
+  let best = -1, bd = 40;
+  $('p3dmarks').querySelectorAll('[data-chest3]').forEach(b => { if (b.hidden) return; const d = Math.hypot(parseFloat(b.style.left) - w, parseFloat(b.style.top) - h); if (d < bd) { bd = d; best = +b.dataset.chest3; } });
+  if (best >= 0) { planSel = best; renderPlan(); d3Draw(); }
+}
 function d3Close() {
+  if (D3) { if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock(); for (const [t, f] of [['pointerlockchange', D3.onLock], ['mousemove', D3.onMouse], ['keydown', D3.onKey], ['keyup', D3.onKey]]) if (f) document.removeEventListener(t, f); }
   if (D3 && D3.ro) D3.ro.disconnect();
   D3 = null; const b = $('p3d'); if (b) b.remove();
 }

@@ -106,6 +106,10 @@ function portalPlan(ws, x, z, ver, type) {
   const box = { b0: [minX + Math.min(ox, ox + wx), 0, minZ + Math.min(oz, oz + wz)], b1: [minX + Math.max(ox, ox + wx) - 1, 0, minZ + Math.max(oz, oz + wz) - 1] };
   const cxm = (box.b0[0] + box.b1[0]) >> 1, czm = (box.b0[2] + box.b1[2]) >> 1;
   const topx = [(giant ? 'ruined_portal/giant_portal_' : 'ruined_portal/portal_') + start, rot, mirror ? 1 : 0, minX, minZ, hx, hz];
+  // the chest's exact place, from the portal's own file (js/06d-topdata.js); its loot seed comes from its own chunk
+  const cl = typeof TOP_EXTRA !== 'undefined' && TOP_EXTRA[topx[0]] && TOP_EXTRA[topx[0]][3][0];
+  if (cl) { const w = turnPos([(mirror ? -cl[0] : cl[0]) - hx, 0, cl[2] - hz], rot), x2 = minX + hx + w[0], z2 = minZ + hz + w[2];
+    return { chests: [{ x: x2, z: z2, table: 'chests/ruined_portal', seed: chunkXoro(ws, x2, z2, salt).nextLongJ() }], pieces: [{ t: giant ? 1 : 0, ...box, topx }], giant }; }
   return { chests: [{ x: cxm, z: czm, table: 'chests/ruined_portal', seed: chunkXoro(ws, ccx, ccz, salt).nextLongJ(), near: true }], pieces: [{ t: giant ? 1 : 0, ...box, topx }], giant };
 }
 LOOT_MORE.portal = (ws, x, z, ver, biome) => portalPlan(ws, x, z, ver, PORTAL_TYPE(biome));

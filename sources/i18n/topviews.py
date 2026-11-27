@@ -137,7 +137,9 @@ def main():
     offs, extra = [], {}
     for n in EXTRA:   # pieces of structures that are not put together by jigsaws (js/06b2-structs2.js, js/06b-structs.js)
         T = jigsaw.nbt(jigsaw.get('structure/' + n + '.nbt')); cells = top_view(T)
-        extra[n] = [len(out), T['size'][0], T['size'][2]]
+        pal = T['palette'] if 'palette' in T else T['palettes'][0]
+        conts = [b['pos'] for b in T['blocks'] if bare(pal[b['state']].get('Name') or pal[b['state']]['id']) in jigsaw.CONTAINERS]   # chests: where they are in the piece
+        extra[n] = [len(out), T['size'][0], T['size'][2], conts]
         for c in cells:
             if c is None: out += b'\0\0'; continue
             (bid, props), wall = c
@@ -162,7 +164,7 @@ def main():
         f.write('// (2 bytes a cell, row by row along X: texture number × 2, +1 for a wall; 0 = nothing); TOP_GZ: the data, gzipped then base64\n')
         f.write('const TOP_TEX = ' + json.dumps(texs, separators=(',', ':')) + ';\n')
         f.write('const TOP_AT = ' + json.dumps(offs, separators=(',', ':')) + ';\n')
-        f.write('const TOP_EXTRA = ' + json.dumps(extra, separators=(',', ':')) + ';   // other pieces: name → [where, size x, size z]\n')
+        f.write('const TOP_EXTRA = ' + json.dumps(extra, separators=(',', ':')) + ';   // other pieces: name → [where, size x, size z, containers [x, y, z]]\n')
         f.write('const TOP_GZ = "' + z + '";\n')
     print(len(texs), 'textures,', len(out), 'bytes raw,', os.path.getsize(path), 'bytes in the file')
     print('no texture:', sorted(missing.items(), key=lambda x: -x[1])[:40])
