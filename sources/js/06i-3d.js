@@ -155,7 +155,6 @@ async function d3Open(S) {
     const at = new Map(); for (const b of blocks) if (/chest|barrel|shulker|decorated_pot|dispenser/.test(b[3])) at.set(b[0] + ',' + b[2], b[1]);
     me.chestPos = S.chests.map(c => { const y = c.y3 != null ? c.y3 : at.get(c.x + ',' + c.z); return y == null ? null : [c.x - lo[0] + .5, y - lo[1] + .5, c.z - lo[2] + .5]; });
     $('p3dmarks').innerHTML = S.chests.map((c, j) => `<button type="button" class="pchest${c.cart ? ' cart' : ''}" data-chest3="${j}" title="${escH(chestName(S, j))} ${j + 1}">${j + 1}</button>`).join('');
-    $('p3dmarks').querySelectorAll('[data-chest3]').forEach(b => b.onclick = () => { planSel = +b.dataset.chest3; renderPlan(); d3Draw(); });   // its contents, on the right
     Object.assign(me, { R, cv, lo, size, yaw: 0.7, pitch: 0.6, dist: Math.max(size[0], size[2]) * 0.85 + 10, center: [size[0] / 2, size[1] / 2, size[2] / 2] });
     $('p3dmsg').remove();
     const cut = $('p3dcut'); cut.max = size[1] - 1; cut.value = size[1] - 1;
@@ -167,7 +166,9 @@ async function d3Open(S) {
     const add = (a, v, k) => { a[0] += v[0] * k; a[1] += v[1] * k; a[2] += v[2] * k; };
     let drag = null;
     const mid = [size[0] / 2, size[1] / 2, size[2] / 2];
+    let down = null;   // the numbers let the mouse through (dragging over one still turns the view): a click without moving picks the one under it
     cv.addEventListener('pointerdown', e => {
+      down = [e.clientX, e.clientY];
       drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId);
     });
     cv.addEventListener('pointermove', e => {
@@ -190,6 +191,12 @@ async function d3Open(S) {
       d3Draw();
     });
     const stop = () => { drag = null; };
+    cv.addEventListener('pointerup', e => {
+      if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) { down = null; return; }
+      down = null;
+      const hit = [...$('p3dmarks').querySelectorAll('[data-chest3]')].find(b => { if (b.hidden) return false; const r = b.getBoundingClientRect(); return e.clientX >= r.left - 2 && e.clientX <= r.right + 2 && e.clientY >= r.top - 2 && e.clientY <= r.bottom + 2; });
+      if (hit) { planSel = +hit.dataset.chest3; renderPlan(); d3Draw(); }   // its contents, on the right
+    });
     cv.addEventListener('pointerup', stop); cv.addEventListener('pointercancel', stop); cv.addEventListener('lostpointercapture', stop);
     cv.addEventListener('contextmenu', e => e.preventDefault());
     const step = Math.max(1, Math.max(size[0], size[2]) * 0.015);

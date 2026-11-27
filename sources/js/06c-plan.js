@@ -187,11 +187,11 @@ function renderPlan() {
   if (S.drawn !== true) {   // the map is built once per plan; picking a chest only moves the highlight
     $('planMap').innerHTML = (S.info ? `<p class="pinfo">${S.info}</p>` : '') + (S.key === 'pyramid' ? planHTML(S) : schemHTML(S)) + `<p class="hint">${note}</p>`;
     S.drawn = true; if (S.key !== 'pyramid') { requestAnimationFrame(pvWire); if ($('ptop')) topDraw(S); }
-  } else document.querySelectorAll('#planMap .pchest').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
+  } else document.querySelectorAll('#planMap .pchest[data-chest]').forEach(b => b.classList.toggle('on', +b.dataset.chest === planSel));
   if (!S.chests.length) { $('planChests').innerHTML = `<p class="hint">${S.note || 'No chest in this one.'}</p>`; return; }
   planSel = Math.min(planSel, S.chests.length - 1);
   if (!planShown(S, planSel)) { const k = S.chests.findIndex((c, j) => planShown(S, j)); if (k >= 0) planSel = k; }   // the picked one was filtered out
-  document.querySelectorAll('#planMap .pchest').forEach(b => { b.hidden = !planShown(S, +b.dataset.chest); b.classList.toggle('on', +b.dataset.chest === planSel); });
+  document.querySelectorAll('#planMap .pchest[data-chest]').forEach(b => { b.hidden = !planShown(S, +b.dataset.chest); b.classList.toggle('on', +b.dataset.chest === planSel); });
   const kinds = [...new Set(S.chests.map((c, j) => chestName(S, j)))];
   const tabs0 = document.querySelector('#planChests .ptabs'), keep = tabs0 ? tabs0.scrollTop : 0;   // the tab list keeps its scroll when a tab is picked
   $('planChests').innerHTML = `<div class="ptabs" role="group" aria-label="Chests">${S.chests.map((c, k) => planShown(S, k) ? `<button type="button" data-chest="${k}" aria-pressed="${k === planSel}" title="${escH(chestName(S, k))} ${k + 1}"><span>${TAB_SHORT[chestName(S, k)] || chestName(S, k)}</span> ${k + 1}</button>` : '').join('')}</div>
