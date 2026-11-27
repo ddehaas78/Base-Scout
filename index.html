@@ -3599,7 +3599,7 @@ $('zout').onclick = () => xMap.zoomAt(xMap.cv.width / 2, xMap.cv.height / 2, 1 /
 function renderDimUI() {
   document.querySelectorAll('#dimseg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.dim === xDim));
   $('xdim').textContent = DIMS[xDim].name;
-  $('gNetherL').hidden = xDim === 1;
+  $('gNetherL').style.visibility = xDim === 1 ? 'hidden' : '';   // End: invisible but keeps its space, so the panel doesn't jump
   $('gNetherT').textContent = xDim === -1 ? 'These are Overworld coordinates' : 'These are Nether coordinates';
   $('goSpawn').hidden = xDim !== 0;
   $('togHint').textContent = xDim === 0 ? 'Structures appear once you zoom in to about 20,000 blocks across. Strongholds show at any zoom.'

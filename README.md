@@ -356,3 +356,4 @@ Le script télécharge cubiomes (commit `e61f905`, sa dernière version), appliq
 | v80 | Seed map : le panneau de gauche a la même largeur que dans le Spot finder, la carte commence au même endroit (plus de décalage en changeant d'onglet) ; la barre au-dessus des panneaux a une hauteur fixe identique dans les deux onglets |
 | v81 | Bouton « ✓ Done » de la même hauteur que « Done » (et que « Chests ») |
 | v82 | Icônes des structures : les vraies textures sont gardées dans le navigateur, donc au rechargement elles s'affichent tout de suite (plus de flash des icônes dessinées) |
+| v83 | Go to : en End, la case « These are … coordinates » est cachée mais garde sa place, donc le panneau ne bouge plus en changeant de dimension |
