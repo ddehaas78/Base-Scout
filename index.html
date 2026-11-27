@@ -759,6 +759,9 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
    so the panels below start on the same pixel whatever the browser's fonts do */
 .pane > .controls { height: 52px; box-sizing: border-box; align-items: flex-end; align-content: flex-end; overflow: visible; }
 .pane > .controls .fdim > span { display: block; height: 16px; line-height: 16px; }
+
+/* buttons that can show a ✓: a fixed line height, so the tick (drawn from another font) doesn't make the button taller */
+#pinbox .actions button, .donemenu button, #planDone { line-height: 1.25 !important; }
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} img{max-width:100%}</style>
 </head>
