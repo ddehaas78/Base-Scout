@@ -108,7 +108,7 @@ function applyRestoredThisSeed() {
   const s = r.sel && exact.concat(close).find(q => q.x === r.sel[0] && q.z === r.sel[1]);
   if (s || exact[0] || close[0]) select(s || exact[0] || close[0]);
 }
-try { const t = localStorage.getItem('basescout.tab'); if (t === 'map' || t === 'lib') setTab(t); } catch {}
+try { const t = localStorage.getItem('basescout.tab') || 'map'; if (t === 'map' || t === 'lib') setTab(t); } catch { setTab('map'); }   // first visit: Seed map
 try {
   const src = $('wsrc').textContent;
   worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
